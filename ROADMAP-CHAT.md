@@ -1,0 +1,63 @@
+# 💬 Roadmap — Comunicación en tiempo real (Chat premium)
+
+Estado de las funciones de chat/colaboración en vivo. Sirve de referencia para
+seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
+`esg:chat:*` despachados desde `dist/app.min.js` y escuchados en `dist/chat.js`.
+
+---
+
+## ✅ Hecho
+
+| Función | Cómo funciona | Archivos clave |
+|---------|---------------|----------------|
+| **Chat grupal + DM** | `recipient_id` NULL = Kollegium, int = DM | `ChatController`, `ChatMessage`, `dist/chat.js` |
+| **Adjuntos** | `POST /api/chat/upload` → `chat-files/` | `ChatController::uploadFile` |
+| **Editar / borrar** | `PATCH`/`DELETE /api/chat/:id` (solo autor) | idem |
+| **Typing** ("schreibt…") | `POST /api/chat/typing` (throttle 2.5s) → WS `chat:typing` → se borra a los 4s | `ChatController::typing` |
+| **Read receipts** (✓/✓✓) | Solo DM. `GET /api/chat?to=` marca leído + emite `chat:read`; tabla `chat_reads(user_id,peer_id,last_read_id)` | `ChatController::index/read`, `ChatMessage::markRead/lastReadBy` |
+| **Reacciones emoji** | `POST /api/chat/:id/react` (toggle) → tabla `chat_reactions` → WS `chat:reaction` | `ChatController::react`, `ChatMessage::toggle/reactionsFor` |
+
+**Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
+`chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
+`esg:chat:*` CustomEvents en el bundle, switch del handler WS en `app.min.js`).
+
+---
+
+## 🔜 Siguiente (pendiente)
+
+### 1. @Menciones con notificación dirigida — **esfuerzo bajo**
+- Parsear `@Nombre` al enviar; resolver a `user_id`.
+- Emitir `user:assigned`-style notify + push al mencionado aunque no esté en el hilo.
+- UI: autocompletar al escribir `@`, resaltar la mención en la burbuja.
+- Backend: en `ChatController::store`, detectar menciones → `Emitter::emit('user:<id>','chat:mention',…)`.
+
+### 2. Responder a un mensaje (reply / quote) — **esfuerzo bajo-medio**
+- Columna `reply_to_id` en `chat_messages`.
+- UI: botón "Responder" (ya hay acciones al hover) → cita el mensaje arriba del composer; la burbuja muestra el fragmento citado.
+
+### 3. 🎤 Mensajes de voz — **esfuerzo medio · feature estrella práctica**
+- Grabar con `MediaRecorder` (webm/opus) en el composer.
+- Subir vía el endpoint de adjuntos ya existente (`/api/chat/upload`) — reutiliza todo.
+- UI: botón micrófono → graba → previsualiza → envía como adjunto de audio con waveform/reproductor (`<audio>`).
+- Sin cambios de backend (ya soporta adjuntos arbitrarios).
+
+### 4. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
+- El puente WS por tabla `events` (~1s) NO sirve para señalización en vivo.
+- Requiere canal de señalización dedicado (WS directo cliente↔servidor para
+  ofertas/answers/ICE) + STUN/TURN.
+- Recomendado solo si se justifica; es prácticamente otro módulo.
+
+### 5. Otros refinamientos
+- Read receipts en grupo (quién leyó) — complejo, opcional.
+- Indicador "en línea / visto por última vez" en el header del DM (ya hay presencia).
+- Buscar dentro del chat.
+- Fijar/anclar mensajes importantes.
+
+---
+
+## Notas técnicas para continuar
+- **Cliente → servidor:** no hay WS push desde el cliente; toda acción va por
+  REST y el servidor emite el evento WS (patrón ya usado por typing/read/react).
+- **Frontend canónico:** `dist/chat.js` (no se compila; editar directo). `app/chat.jsx` es copia espejo para lectura.
+- **Nuevos eventos WS:** añadir un `case "chat:<x>"` en el switch del handler WS en `dist/app.min.js` que despache `esg:chat:<x>`, y un listener en `ChatView`.
+- **Migraciones DB:** las tablas nuevas van también en `backend/schema.sqlite.sql` (instalaciones nuevas) y como `ALTER/CREATE` en la DB viva.

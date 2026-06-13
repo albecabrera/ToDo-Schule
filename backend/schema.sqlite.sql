@@ -239,6 +239,26 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_dm      ON chat_messages(user_id, recipient_id);
 
+-- Lesebestätigungen (pro Leser/Gesprächspartner, nur für Direktnachrichten)
+CREATE TABLE IF NOT EXISTS chat_reads (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  peer_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_id INTEGER NOT NULL DEFAULT 0,
+  updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, peer_id)
+);
+
+-- Emoji-Reaktionen auf Chat-Nachrichten
+CREATE TABLE IF NOT EXISTS chat_reactions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji      TEXT    NOT NULL,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(message_id, user_id, emoji)
+);
+CREATE INDEX IF NOT EXISTS idx_react_msg ON chat_reactions(message_id);
+
 -- ---------------------------------------------------------------------------
 --  Anhänge (Datei-Uploads an Aufgaben & Notizen)
 -- ---------------------------------------------------------------------------

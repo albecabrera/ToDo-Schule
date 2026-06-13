@@ -21,7 +21,90 @@ final class ChatController
     {
         $to   = isset($req->query['to']) && $req->query['to'] !== '' ? (int) $req->query['to'] : null;
         $msgs = ChatMessage::recent(100, $req->userId(), $to);
-        Response::json(['messages' => $msgs]);
+
+        // Reaktionen gebündelt anhängen.
+        $ids       = array_map(static fn ($m) => (int) $m['id'], $msgs);
+        $reactions = ChatMessage::reactionsForMany($ids);
+        foreach ($msgs as &$m) {
+            $m['reactions'] = $reactions[(int) $m['id']] ?? [];
+        }
+        unset($m);
+
+        $payload = ['messages' => $msgs];
+
+        // Lesebestätigung (nur DM): bis zu welcher eigenen Nachricht hat der
+        // Gesprächspartner gelesen? + eingehende DMs als gelesen markieren.
+        if ($to !== null) {
+            $payload['readUpTo'] = ChatMessage::lastReadBy($to, $req->userId());
+            $lastIncoming = 0;
+            foreach ($msgs as $m) {
+                if ((int) $m['user_id'] === $to) {
+                    $lastIncoming = max($lastIncoming, (int) $m['id']);
+                }
+            }
+            if ($lastIncoming > 0) {
+                ChatMessage::markRead($req->userId(), $to, $lastIncoming);
+                Emitter::emit('user:' . $to, 'chat:read', [
+                    'reader'     => $req->userId(),
+                    'lastReadId' => $lastIncoming,
+                ]);
+            }
+        }
+
+        Response::json($payload);
+    }
+
+    /** POST /api/chat/typing  body: { to? } — flüchtiger „schreibt…"-Hinweis. */
+    public static function typing(Request $req): void
+    {
+        $to = isset($req->body['to']) && $req->body['to'] !== null && $req->body['to'] !== ''
+            ? (int) $req->body['to'] : null;
+        $payload = ['userId' => $req->userId(), 'to' => $to];
+        if ($to !== null) {
+            Emitter::emit('user:' . $to, 'chat:typing', $payload);
+        } else {
+            Emitter::emit('broadcast', 'chat:typing', $payload);
+        }
+        Response::noContent();
+    }
+
+    /** POST /api/chat/read  body: { to, lastId } — DM als gelesen markieren. */
+    public static function read(Request $req): void
+    {
+        $data   = Validator::make($req->body, [
+            'to'     => 'required|int',
+            'lastId' => 'required|int',
+        ]);
+        $peer   = (int) $data['to'];
+        $lastId = (int) $data['lastId'];
+        ChatMessage::markRead($req->userId(), $peer, $lastId);
+        Emitter::emit('user:' . $peer, 'chat:read', [
+            'reader'     => $req->userId(),
+            'lastReadId' => $lastId,
+        ]);
+        Response::noContent();
+    }
+
+    /** POST /api/chat/:id/react  body: { emoji } — Reaktion an-/abschalten. */
+    public static function react(Request $req): void
+    {
+        $msg = ChatMessage::find((int) $req->param('id'));
+        if ($msg === null) {
+            throw new HttpException(404, 'Nachricht nicht gefunden.');
+        }
+        $data  = Validator::make($req->body, ['emoji' => 'required|string|max:16']);
+        $action = ChatMessage::toggleReaction((int) $msg['id'], $req->userId(), $data['emoji']);
+        $reactions = ChatMessage::reactionsFor((int) $msg['id']);
+
+        $recipientId = $msg['recipient_id'] !== null ? (int) $msg['recipient_id'] : null;
+        self::fanOut(
+            ['id' => (int) $msg['id'], 'reactions' => $reactions],
+            $recipientId,
+            (int) $msg['user_id'],
+            'chat:reaction'
+        );
+
+        Response::json(['action' => $action, 'reactions' => $reactions]);
     }
 
     /** POST /api/chat/upload  multipart: file */

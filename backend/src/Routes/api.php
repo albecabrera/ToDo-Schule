@@ -103,6 +103,9 @@ return (static function (): Router {
     $r->post('/api/chat/upload', [ChatController::class, 'uploadFile'], ['auth' => true]);
     $r->patch('/api/chat/:id',   [ChatController::class, 'update'],     ['auth' => true]);
     $r->delete('/api/chat/:id',  [ChatController::class, 'destroy'],    ['auth' => true]);
+    $r->post('/api/chat/typing', [ChatController::class, 'typing'],     ['auth' => true]);
+    $r->post('/api/chat/read',   [ChatController::class, 'read'],       ['auth' => true]);
+    $r->post('/api/chat/:id/react', [ChatController::class, 'react'],   ['auth' => true]);
 
     // --- Web-Push ------------------------------------------------------------
     $r->get('/api/push/public-key',  [PushController::class, 'publicKey'],   ['auth' => true]);

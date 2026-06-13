@@ -95,9 +95,10 @@ return (static function (): Router {
     $r->patch('/api/notifications/:id',    [NotificationController::class, 'markRead'],    ['auth' => true]);
     $r->post('/api/notifications/read-all',[NotificationController::class, 'markAllRead'], ['auth' => true]);
 
-    // --- Kollegiumschat ------------------------------------------------------
-    $r->get('/api/chat',  [ChatController::class, 'index'], ['auth' => true]);
-    $r->post('/api/chat', [ChatController::class, 'store'], ['auth' => true]);
+    // --- Chat ----------------------------------------------------------------
+    $r->get('/api/chat',         [ChatController::class, 'index'],      ['auth' => true]);
+    $r->post('/api/chat',        [ChatController::class, 'store'],      ['auth' => true]);
+    $r->post('/api/chat/upload', [ChatController::class, 'uploadFile'], ['auth' => true]);
 
     return $r;
 })();

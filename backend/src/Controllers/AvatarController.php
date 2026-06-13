@@ -62,7 +62,7 @@ final class AvatarController
         $white = imagecolorallocate($out, 255, 255, 255);
         imagefill($out, 0, 0, $white);
         imagecopyresampled($out, $src, 0, 0, $cropX, $cropY, self::OUT_SIZE, self::OUT_SIZE, $minSide, $minSide);
-        imagedestroy($src);
+        unset($src);
 
         $userId  = $req->userId();
         $dir     = self::AVATARS_DIR;
@@ -71,7 +71,7 @@ final class AvatarController
         }
         $dest = $dir . $userId . '.jpg';
         imagejpeg($out, $dest, self::QUALITY);
-        imagedestroy($out);
+        unset($out);
 
         $avatarPath = '/avatars/' . $userId . '.jpg';
         $user       = User::update($userId, ['avatar_url' => $avatarPath]);
@@ -81,16 +81,11 @@ final class AvatarController
 
     private static function fixOrientation(\GdImage $img, int $orientation): \GdImage
     {
-        $rotated = match ($orientation) {
+        return match ($orientation) {
             3 => imagerotate($img, 180, 0),
             6 => imagerotate($img, -90, 0),
             8 => imagerotate($img, 90, 0),
-            default => null,
+            default => $img,
         };
-        if ($rotated !== null) {
-            imagedestroy($img);
-            return $rotated;
-        }
-        return $img;
     }
 }

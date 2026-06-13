@@ -228,9 +228,13 @@ CREATE INDEX IF NOT EXISTS idx_notif_created ON notifications(created_at);
 --  Kollegiumschat
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS chat_messages (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  content    TEXT    NOT NULL,
-  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  content         TEXT    NOT NULL DEFAULT '',
+  attachment_url  TEXT,
+  attachment_name TEXT,
+  created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_dm      ON chat_messages(user_id, recipient_id);

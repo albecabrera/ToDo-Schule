@@ -13,6 +13,20 @@ function LoginScreen({onLogin}){
   const [name, setName]   = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [resetMsg, setResetMsg] = useState(null); // Erfolgsmeldung Passwort-Reset
+
+  // Passwort zurücksetzen ohne Mailserver: Kürzel + Schul-E-Mail müssen zum
+  // selben Konto gehören; das Backend setzt das Passwort auf den Nachnamen.
+  async function resetPassword(e){
+    e.preventDefault();
+    setLoading(true); setError(null); setResetMsg(null);
+    try{
+      const d = await window.ESG_API.resetPassword(email.trim(), name.trim());
+      setResetMsg(d.message || "Passwort wurde zurückgesetzt.");
+    }catch(err){
+      setError(err.error || err.message || "Zurücksetzen fehlgeschlagen.");
+    }finally{ setLoading(false); }
+  }
 
   // Echter Login/Registrierung gegen das PHP-Backend.
   // Lehrer melden sich mit ihrem Kürzel an ('ca' für Cabrera); E-Mail geht auch.
@@ -152,16 +166,22 @@ function LoginScreen({onLogin}){
 
         step === "forgot" && h("div",null,
           h("h2",{className:"login-card",style:{padding:0}},"Passwort zurücksetzen"),
-          h("p",{className:"sub",style:{marginTop:10}},"Gib deine Schul-E-Mail-Adresse ein, wir senden dir einen Link."),
-          h("form",{className:"login-form",onSubmit:e=>{e.preventDefault();setStep("login")}},
+          h("p",{className:"sub",style:{marginTop:10}},"Gib dein Kürzel und deine Schul-E-Mail ein. Dein Passwort wird auf deinen Nachnamen zurückgesetzt — danach wählst du beim Login ein neues."),
+          resetMsg && h("div",{className:"login-success"},resetMsg),
+          error && h("div",{className:"login-error"},error),
+          !resetMsg && h("form",{className:"login-form",onSubmit:resetPassword},
+            h("div",{className:"field"},
+              h("label",null,"Kürzel"),
+              h("input",{className:"input input-lg",value:email,onChange:e=>setEmail(e.target.value),placeholder:"z. B. ca",autoFocus:true})
+            ),
             h("div",{className:"field"},
               h("label",null,"Schul-E-Mail"),
-              h("input",{className:"input input-lg",type:"email",placeholder:"name@esg-bonn.de",autoFocus:true})
+              h("input",{className:"input input-lg",type:"email",value:name,onChange:e=>setName(e.target.value),placeholder:"name@esg-bonn.de"})
             ),
-            h("button",{type:"submit",className:"btn btn-primary btn-lg btn-block"},"Link senden"),
-            h("div",{className:"login-switch"},
-              h("button",{type:"button",onClick:()=>setStep("login")},"← Zurück zum Login")
-            )
+            h("button",{type:"submit",className:"btn btn-primary btn-lg btn-block",disabled:loading},loading?"Wird zurückgesetzt…":"Passwort zurücksetzen")
+          ),
+          h("div",{className:"login-switch"},
+            h("button",{type:"button",onClick:()=>{setStep("login");setError(null);setResetMsg(null)}},"← Zurück zum Login")
           )
         )
       )

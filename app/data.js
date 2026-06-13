@@ -361,6 +361,11 @@ const ESG_API = {
     setTokens(data);
     return data.user;
   },
+  /* Passwort zurücksetzen (ohne Mailserver): Kürzel + Schul-E-Mail müssen
+     zum selben Konto gehören → Backend setzt Passwort auf den Nachnamen. */
+  async resetPassword(abbreviation, email){
+    return await apiFetch("/api/auth/reset-password", {method:"POST", body:JSON.stringify({abbreviation, email})});
+  },
   /* identifier = Lehrerkürzel ('ca') ODER E-Mail */
   async login(identifier, password){
     const body = identifier.includes("@")

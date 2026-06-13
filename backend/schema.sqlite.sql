@@ -238,3 +238,20 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_dm      ON chat_messages(user_id, recipient_id);
+
+-- ---------------------------------------------------------------------------
+--  Anhänge (Datei-Uploads an Aufgaben & Notizen)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS attachments (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id       INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+  note_id       INTEGER REFERENCES notes(id) ON DELETE CASCADE,
+  filename      TEXT    NOT NULL,
+  original_name TEXT    NOT NULL,
+  mime_type     TEXT    NOT NULL,
+  size          INTEGER NOT NULL DEFAULT 0,
+  uploaded_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_att_task ON attachments(task_id);
+CREATE INDEX IF NOT EXISTS idx_att_note ON attachments(note_id);

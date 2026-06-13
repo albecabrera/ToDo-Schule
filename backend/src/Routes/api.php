@@ -34,6 +34,7 @@ return (static function (): Router {
     $r->post('/api/auth/login',    [AuthController::class, 'login'],    ['rateLimit' => 'auth']);
     $r->post('/api/auth/refresh',  [AuthController::class, 'refresh'],  ['rateLimit' => 'auth']);
     $r->post('/api/auth/logout',   [AuthController::class, 'logout']);
+    $r->post('/api/auth/reset-password', [AuthController::class, 'resetPassword'], ['rateLimit' => 'auth']);
 
     // --- Profil ---------------------------------------------------------------
     $r->get('/api/users',            [UserController::class,  'colleagues'], ['auth' => true]);

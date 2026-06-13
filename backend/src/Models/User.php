@@ -85,6 +85,14 @@ final class User extends Model
         )->execute([':p' => password_hash($password, PASSWORD_BCRYPT), ':id' => $id]);
     }
 
+    /** Setzt das Passwort zurück und erzwingt einen Wechsel beim nächsten Login. */
+    public static function resetToTemporary(int $id, string $password): void
+    {
+        self::db()->prepare(
+            'UPDATE users SET password_hash = :p, must_change_password = 1 WHERE id = :id'
+        )->execute([':p' => password_hash($password, PASSWORD_BCRYPT), ':id' => $id]);
+    }
+
     public static function update(int $id, array $fields): array
     {
         $allowed = ['name', 'avatar_url'];

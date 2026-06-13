@@ -69,6 +69,48 @@ final class AuthController
         Response::json(['user' => $user, ...$tokens]);
     }
 
+    /**
+     * Passwort-Selbstzurücksetzung ohne Mailserver:
+     * Kürzel + Schul-E-Mail müssen zum selben Konto gehören. Das Passwort wird
+     * dann auf den Nachnamen zurückgesetzt (= Erstpasswort) und ein erzwungener
+     * Wechsel beim nächsten Login aktiviert.
+     */
+    public static function resetPassword(Request $req): void
+    {
+        $data = Validator::make($req->body, [
+            'abbreviation' => 'required|string|max:8',
+            'email'        => 'required|email|max:255',
+        ]);
+
+        $user = User::findByAbbreviation(trim($data['abbreviation']));
+
+        // Bewusst generische Antwort, falls Kürzel oder E-Mail nicht passen
+        // (keine Auskunft, ob ein Konto existiert).
+        if ($user === null
+            || strcasecmp((string) ($user['email'] ?? ''), trim($data['email'])) !== 0) {
+            throw HttpException::unprocessable(
+                'Kürzel und E-Mail passen zu keinem Konto.',
+                [],
+                'reset_no_match'
+            );
+        }
+
+        // Nachname = letztes Wort des Namens (wie beim Seed des Erstpassworts).
+        $parts    = preg_split('/\s+/', trim((string) ($user['name'] ?? '')));
+        $lastName = $parts ? end($parts) : '';
+        if ($lastName === '') {
+            throw HttpException::unprocessable('Konto hat keinen Namen hinterlegt.', [], 'reset_no_name');
+        }
+
+        User::resetToTemporary((int) $user['id'], $lastName);
+
+        Response::json([
+            'success' => true,
+            'message' => 'Passwort wurde auf deinen Nachnamen zurückgesetzt. '
+                . 'Melde dich damit an und wähle anschließend ein neues Passwort.',
+        ]);
+    }
+
     public static function refresh(Request $req): void
     {
         $data = Validator::make($req->body, ['refreshToken' => 'required|string']);

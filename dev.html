@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="" data-accent="" data-density="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[DEV] ToDo-Schule · ESG</title>
+  <!--
+    Entwicklungs-Variante: lädt die JSX-Module einzeln und transpiliert sie
+    mit Babel im Browser (langsam, aber ohne Build-Schritt).
+    Produktion: ToDo-Schule.html  (vorkompiliert via ./build.sh)
+  -->
+  <link rel="icon" href="assets/esg-mark.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;550;600;650;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="app/tokens.css">
+  <link rel="stylesheet" href="app/components.css">
+  <link rel="stylesheet" href="app/screens.css">
+  <link rel="stylesheet" href="app/overlays.css">
+  <link rel="stylesheet" href="app/notes.css">
+  <link rel="stylesheet" href="app/responsive.css">
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="app/data.js"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="app/icons.jsx"></script>
+  <script type="text/babel" src="app/ui.jsx"></script>
+  <script type="text/babel" src="app/login.jsx"></script>
+  <script type="text/babel" src="app/shell.jsx"></script>
+  <script type="text/babel" src="app/taskviews.jsx"></script>
+  <script type="text/babel" src="app/drawer.jsx"></script>
+  <script type="text/babel" src="app/overlays.jsx"></script>
+  <script type="text/babel" src="app/notes.jsx"></script>
+  <script type="text/babel" src="app/app.jsx"></script>
+</body>
+</html>

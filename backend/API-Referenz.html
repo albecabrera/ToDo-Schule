@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ToDo-Schule API — Referenz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14161c;
+    --ink-2: #1c1f27;
+    --paper: #f6f6f3;
+    --card: #ffffff;
+    --line: #e6e5df;
+    --muted: #6b6e76;
+    --text: #23262e;
+    --accent: #d8552a;      /* warmes Terrakotta */
+    --accent-soft: #fbe9e1;
+    --get: #1f8a5b;
+    --get-bg: #e6f3ec;
+    --post: #2a6fdb;
+    --post-bg: #e6eefb;
+    --patch: #b9821a;
+    --patch-bg: #f7eed6;
+    --delete: #c63d3d;
+    --delete-bg: #f8e4e4;
+    --ws: #7a4bd0;
+    --ws-bg: #efe7fa;
+    --sidebar-w: 270px;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--ink);
+    color: #cfd2da;
+    padding: 26px 0 40px;
+    overflow-y: auto;
+    border-right: 1px solid #000;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 11px;
+    padding: 0 24px 22px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #2a2d36;
+  }
+  .brand .mark {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent);
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 19px;
+    box-shadow: 0 4px 14px rgba(216,85,42,.4);
+    flex-shrink: 0;
+  }
+  .brand b { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: -.2px; display: block; }
+  .brand span { font-size: 11.5px; color: #8a8e98; font-family: var(--mono); }
+
+  .nav-group { padding: 14px 0 4px; }
+  .nav-group h4 {
+    margin: 0; padding: 0 24px 8px;
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: #6a6e79; font-weight: 600;
+  }
+  .nav-group a {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 24px; font-size: 13px; color: #c2c5cd;
+    text-decoration: none; transition: background .12s, color .12s;
+    border-left: 2px solid transparent;
+  }
+  .nav-group a:hover { background: #20232c; color: #fff; }
+  .nav-group a .verb {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    width: 40px; flex-shrink: 0; text-align: right; opacity: .85;
+  }
+  .v-get { color: #5fd39b; }
+  .v-post { color: #7facf2; }
+  .v-patch { color: #e2bd6b; }
+  .v-delete { color: #ef8a8a; }
+
+  /* ---------- Main ---------- */
+  main {
+    margin-left: var(--sidebar-w);
+    max-width: 920px;
+    padding: 0 56px 120px;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 5;
+    margin: 0 -56px 0;
+    padding: 14px 56px;
+    background: rgba(246,246,243,.86);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .chip {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    background: var(--card); border: 1px solid var(--line);
+    padding: 4px 10px; border-radius: 100px; color: var(--muted);
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 56px 0 30px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: 44px; line-height: 1.05; margin: 0 0 16px;
+    letter-spacing: -1.4px; font-weight: 700; color: var(--ink);
+  }
+  .lede { font-size: 17px; color: var(--muted); max-width: 620px; margin: 0; }
+
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 34px;
+  }
+  .meta-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .meta-card .k {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .meta-card .val { font-family: var(--mono); font-size: 14px; color: var(--ink); font-weight: 500; }
+  .meta-card .val.accent { color: var(--accent); }
+
+  section { padding-top: 56px; scroll-margin-top: 70px; }
+  .sec-head { margin-bottom: 22px; }
+  .sec-head h2 {
+    font-size: 26px; margin: 0 0 6px; letter-spacing: -.6px;
+    color: var(--ink); font-weight: 600;
+  }
+  .sec-head p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  /* ---------- Endpoint cards ---------- */
+  .endpoint {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; margin-bottom: 16px; overflow: hidden;
+  }
+  .ep-head {
+    display: flex; align-items: center; gap: 13px;
+    padding: 15px 18px;
+  }
+  .ep-head.has-body { border-bottom: 1px solid var(--line); }
+  .method {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    padding: 4px 9px; border-radius: 6px; letter-spacing: .03em; flex-shrink: 0;
+    min-width: 58px; text-align: center;
+  }
+  .m-get { color: var(--get); background: var(--get-bg); }
+  .m-post { color: var(--post); background: var(--post-bg); }
+  .m-patch { color: var(--patch); background: var(--patch-bg); }
+  .m-delete { color: var(--delete); background: var(--delete-bg); }
+  .path { font-family: var(--mono); font-size: 14px; color: var(--ink); font-weight: 500; }
+  .path .pvar { color: var(--accent); }
+  .ep-desc { margin-left: auto; font-size: 12.5px; color: var(--muted); text-align: right; }
+  .lock { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .lock.pub { color: var(--get); }
+
+  .ep-body { padding: 16px 18px; background: #fcfcfb; }
+  .ep-body .label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 8px;
+  }
+  .ep-body .label:not(:first-child) { margin-top: 16px; }
+
+  pre {
+    margin: 0; padding: 14px 16px; border-radius: 9px;
+    background: var(--ink); color: #e4e6ea;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+    overflow-x: auto;
+  }
+  pre .key { color: #9ecbff; }
+  pre .str { color: #9ee6b8; }
+  pre .num { color: #e2bd6b; }
+  pre .bool { color: #d8a0f0; }
+  pre .cm { color: #6b7280; font-style: italic; }
+
+  /* ---------- Architecture ---------- */
+  .arch {
+    background: var(--ink); border-radius: 16px; padding: 30px;
+    color: #d7dae1; margin-top: 8px;
+  }
+  .arch h3 { color: #fff; margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  .arch p.sub { color: #8a8e98; margin: 0 0 26px; font-size: 13.5px; }
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .node {
+    flex: 1; min-width: 120px; background: #20232c; border: 1px solid #2c2f39;
+    border-radius: 11px; padding: 15px 16px;
+  }
+  .node .nt { font-size: 13px; color: #fff; font-weight: 600; margin-bottom: 3px; }
+  .node .nd { font-size: 11.5px; color: #888c97; font-family: var(--mono); line-height: 1.5; }
+  .node.hl { border-color: var(--accent); background: #2a2018; }
+  .node.hl .nt { color: var(--accent); }
+  .arrow {
+    display: grid; place-items: center; padding: 0 6px;
+    color: #565a64; font-size: 20px; min-width: 34px;
+  }
+  .arrow small { display: block; font-family: var(--mono); font-size: 9px; color: #6f7480; margin-top: 2px; text-align:center; }
+
+  .ev-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 26px; }
+  .ev {
+    display: flex; align-items: center; gap: 11px;
+    background: #1b1e26; border: 1px solid #2a2d36; border-radius: 9px; padding: 11px 14px;
+  }
+  .ev code { font-family: var(--mono); font-size: 12.5px; color: #b89af0; font-weight: 500; }
+  .ev span { font-size: 12px; color: #8a8e98; }
+  .ev .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ws); flex-shrink: 0; }
+
+  .footnote {
+    margin-top: 70px; padding-top: 22px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); font-family: var(--mono);
+  }
+
+  @media (max-width: 880px) {
+    .sidebar { display: none; }
+    main { margin-left: 0; padding: 0 22px 80px; max-width: 100%; }
+    .topbar { margin: 0 -22px; padding: 12px 22px; }
+    .meta-grid, .ev-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 34px; }
+    .ep-desc { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark">T</div>
+    <div>
+      <b>ToDo-Schule</b>
+      <span>REST &amp; WebSocket API</span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <h4>Einstieg</h4>
+    <a href="#overview"><span class="verb">＃</span> Überblick</a>
+    <a href="#architecture"><span class="verb">＃</span> Architektur</a>
+  </div>
+  <div class="nav-group">
+    <h4>Authentifizierung</h4>
+    <a href="#auth"><span class="verb v-post">POST</span> register</a>
+    <a href="#auth"><span class="verb v-post">POST</span> login</a>
+    <a href="#auth"><span class="verb v-post">POST</span> refresh</a>
+    <a href="#auth"><span class="verb v-post">POST</span> logout</a>
+  </div>
+  <div class="nav-group">
+    <h4>Profil</h4>
+    <a href="#users"><span class="verb v-get">GET</span> users/me</a>
+    <a href="#users"><span class="verb v-patch">PATCH</span> users/me</a>
+  </div>
+  <div class="nav-group">
+    <h4>Aufgaben</h4>
+    <a href="#tasks"><span class="verb v-get">GET</span> tasks</a>
+    <a href="#tasks"><span class="verb v-post">POST</span> tasks</a>
+    <a href="#tasks"><span class="verb v-patch">PATCH</span> tasks/:id</a>
+    <a href="#tasks"><span class="verb v-delete">DEL</span> tasks/:id</a>
+    <a href="#assign"><span class="verb v-patch">PATCH</span> assign</a>
+  </div>
+  <div class="nav-group">
+    <h4>Kollaboration</h4>
+    <a href="#share"><span class="verb v-post">POST</span> share</a>
+    <a href="#comments"><span class="verb v-post">POST</span> comments</a>
+    <a href="#teams"><span class="verb v-post">POST</span> teams</a>
+    <a href="#audit"><span class="verb v-get">GET</span> audit</a>
+  </div>
+  <div class="nav-group">
+    <h4>Echtzeit</h4>
+    <a href="#realtime"><span class="verb">WS</span> WebSocket</a>
+  </div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <span class="chip"><b>PHP</b> 8.1+</span>
+    <span class="chip"><b>MySQL</b> / MariaDB</span>
+    <span class="chip"><b>JWT</b> Access + Refresh</span>
+    <span class="chip"><b>WebSocket</b> RFC 6455</span>
+    <span class="chip">0 Abhängigkeiten</span>
+  </div>
+
+  <!-- HERO -->
+  <header class="hero" id="overview">
+    <div class="eyebrow">Backend-Referenz</div>
+    <h1>Kollaboratives ToDo-Backend für die PWA.</h1>
+    <p class="lede">Vollständige REST-API mit Authentifizierung, Teams, Share-Links,
+      Kommentaren, Audit-Trail und Echtzeit-Synchronisation über WebSockets —
+      umgesetzt in reinem PHP &amp; SQL, ohne externe Bibliotheken.</p>
+
+    <div class="meta-grid">
+      <div class="meta-card">
+        <div class="k">REST Base URL</div>
+        <div class="val accent">http://localhost:8080</div>
+      </div>
+      <div class="meta-card">
+        <div class="k">WebSocket</div>
+        <div class="val accent">ws://localhost:8090</div>
+      </div>
+      <div class="meta-card">
+        <div class="k">Auth-Header</div>
+        <div class="val">Authorization: Bearer &lt;token&gt;</div>
+      </div>
+      <div class="meta-card">
+        <div class="k">Fehlerformat</div>
+        <div class="val">{ error, code }</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture">
+    <div class="sec-head">
+      <h2>Architektur</h2>
+      <p>Zwei Prozesse, eine Datenbank. Die <code>events</code>-Tabelle überbrückt
+         zustandsloses PHP-FPM und den langlebigen WebSocket-Prozess.</p>
+    </div>
+    <div class="arch">
+      <h3>Echtzeit-Datenfluss</h3>
+      <p class="sub">REST schreibt Ereignisse → WebSocket-Server pollt &amp; broadcastet an die Rooms.</p>
+      <div class="flow">
+        <div class="node">
+          <div class="nt">PWA Client</div>
+          <div class="nd">fetch + nativer<br/>WebSocket</div>
+        </div>
+        <div class="arrow">→<small>HTTP</small></div>
+        <div class="node">
+          <div class="nt">REST API</div>
+          <div class="nd">public/index.php<br/>Controller</div>
+        </div>
+        <div class="arrow">→<small>INSERT</small></div>
+        <div class="node hl">
+          <div class="nt">events-Tabelle</div>
+          <div class="nd">channel · event<br/>payload (JSON)</div>
+        </div>
+        <div class="arrow">→<small>POLL</small></div>
+        <div class="node">
+          <div class="nt">WS-Server</div>
+          <div class="nd">bin/ws-server.php<br/>Rooms: user/team</div>
+        </div>
+        <div class="arrow">→<small>PUSH</small></div>
+        <div class="node">
+          <div class="nt">PWA Client</div>
+          <div class="nd">Live-Update<br/>des State</div>
+        </div>
+      </div>
+
+      <div class="ev-grid">
+        <div class="ev"><span class="dot"></span><code>task:created</code><span>· neue Aufgabe</span></div>
+        <div class="ev"><span class="dot"></span><code>task:updated</code><span>· Status/Prio/Datum</span></div>
+        <div class="ev"><span class="dot"></span><code>task:deleted</code><span>· gelöscht</span></div>
+        <div class="ev"><span class="dot"></span><code>comment:added</code><span>· neuer Kommentar</span></div>
+        <div class="ev"><span class="dot"></span><code>user:assigned</code><span>· Zuweisung</span></div>
+        <div class="ev"><span class="dot"></span><code>team:member_added</code><span>· neues Mitglied</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUTH -->
+  <section id="auth">
+    <div class="sec-head">
+      <h2>Authentifizierung &amp; Benutzer</h2>
+      <p>JWT mit kurzlebigem Access-Token und rotierendem Refresh-Token. Passwörter via bcrypt.</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body">
+        <span class="method m-post">POST</span>
+        <span class="path">/api/auth/register</span>
+        <span class="ep-desc">Konto anlegen · rate-limited</span>
+      </div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{
+  <span class="key">"email"</span>: <span class="str">"lea@schule.de"</span>,
+  <span class="key">"password"</span>: <span class="str">"mind8Zeichen"</span>,
+  <span class="key">"name"</span>: <span class="str">"Lea M."</span>
+}</pre>
+        <p class="label">Response · 201</p>
+<pre>{
+  <span class="key">"user"</span>: { <span class="key">"id"</span>: <span class="num">1</span>, <span class="key">"email"</span>: <span class="str">"lea@schule.de"</span>, <span class="key">"name"</span>: <span class="str">"Lea M."</span> },
+  <span class="key">"accessToken"</span>: <span class="str">"eyJhbG..."</span>,
+  <span class="key">"refreshToken"</span>: <span class="str">"eyJhbG..."</span>,
+  <span class="key">"expiresIn"</span>: <span class="num">900</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body">
+        <span class="method m-post">POST</span>
+        <span class="path">/api/auth/login</span>
+        <span class="ep-desc">Token-Paar erhalten · rate-limited</span>
+      </div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"email"</span>: <span class="str">"lea@schule.de"</span>, <span class="key">"password"</span>: <span class="str">"mind8Zeichen"</span> }</pre>
+        <p class="label">Response · 200</p>
+<pre>{ <span class="key">"user"</span>: { … }, <span class="key">"accessToken"</span>: <span class="str">"…"</span>, <span class="key">"refreshToken"</span>: <span class="str">"…"</span>, <span class="key">"expiresIn"</span>: <span class="num">900</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body">
+        <span class="method m-post">POST</span>
+        <span class="path">/api/auth/refresh</span>
+        <span class="ep-desc">Rotation: altes Token wird widerrufen</span>
+      </div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"refreshToken"</span>: <span class="str">"eyJhbG..."</span> }</pre>
+        <p class="label">Response · 200</p>
+<pre>{ <span class="key">"accessToken"</span>: <span class="str">"…neu…"</span>, <span class="key">"refreshToken"</span>: <span class="str">"…neu…"</span>, <span class="key">"expiresIn"</span>: <span class="num">900</span> }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head">
+        <span class="method m-post">POST</span>
+        <span class="path">/api/auth/logout</span>
+        <span class="ep-desc">Refresh-Token serverseitig invalidieren</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- USERS -->
+  <section id="users">
+    <div class="sec-head">
+      <h2>Profil</h2>
+      <p>Eigene Stammdaten lesen und ändern.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-get">GET</span><span class="path">/api/users/me</span><span class="lock">🔒 auth</span></div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-patch">PATCH</span><span class="path">/api/users/me</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"name"</span>: <span class="str">"Lea Müller"</span>, <span class="key">"avatarUrl"</span>: <span class="str">"https://…/a.png"</span> }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- TASKS -->
+  <section id="tasks">
+    <div class="sec-head">
+      <h2>Aufgabenverwaltung</h2>
+      <p>Sichtbar sind eigene, zugewiesene und Team-Aufgaben. Jede Änderung landet im Audit-Log und wird live verteilt.</p>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body">
+        <span class="method m-get">GET</span><span class="path">/api/tasks</span><span class="lock">🔒 auth</span>
+      </div>
+      <div class="ep-body">
+        <p class="label">Query (optional)</p>
+<pre><span class="cm">?status=todo|in_progress|done   &amp;teamId=2</span></pre>
+        <p class="label">Response · 200</p>
+<pre>{
+  <span class="key">"tasks"</span>: [{
+    <span class="key">"id"</span>: <span class="num">7</span>, <span class="key">"title"</span>: <span class="str">"Referat vorbereiten"</span>,
+    <span class="key">"status"</span>: <span class="str">"in_progress"</span>, <span class="key">"priority"</span>: <span class="str">"high"</span>,
+    <span class="key">"due_date"</span>: <span class="str">"2026-06-20 12:00:00"</span>, <span class="key">"team_id"</span>: <span class="num">2</span>,
+    <span class="key">"created_by"</span>: <span class="num">1</span>, <span class="key">"assignees"</span>: [<span class="num">1</span>, <span class="num">3</span>]
+  }]
+}</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body">
+        <span class="method m-post">POST</span><span class="path">/api/tasks</span><span class="lock">🔒 auth</span>
+      </div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{
+  <span class="key">"title"</span>: <span class="str">"Referat vorbereiten"</span>,
+  <span class="key">"description"</span>: <span class="str">"Folien + Handout"</span>,
+  <span class="key">"priority"</span>: <span class="str">"high"</span>,
+  <span class="key">"dueDate"</span>: <span class="str">"2026-06-20T12:00"</span>,
+  <span class="key">"teamId"</span>: <span class="num">2</span>,
+  <span class="key">"assignees"</span>: [<span class="num">1</span>, <span class="num">3</span>]
+}</pre>
+        <p class="label">Realtime</p>
+<pre><span class="cm">→ task:created  an user:1, user:3, team:2</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-get">GET</span><span class="path">/api/tasks/<span class="pvar">:id</span></span><span class="lock">🔒 auth</span></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-patch">PATCH</span><span class="path">/api/tasks/<span class="pvar">:id</span></span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request (Teilfelder)</p>
+<pre>{ <span class="key">"status"</span>: <span class="str">"done"</span>, <span class="key">"priority"</span>: <span class="str">"medium"</span> }</pre>
+        <p class="label">Realtime</p>
+<pre><span class="cm">→ task:updated  (mit changes-Diff fürs Audit-Log)</span></pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-delete">DELETE</span><span class="path">/api/tasks/<span class="pvar">:id</span></span><span class="ep-desc">nur Ersteller · 204</span></div>
+    </div>
+  </section>
+
+  <!-- ASSIGN -->
+  <section id="assign">
+    <div class="sec-head">
+      <h2>Zuweisungen</h2>
+      <p>Aufgaben einem oder mehreren Nutzern zuweisen — Betroffene werden benachrichtigt.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-patch">PATCH</span><span class="path">/api/tasks/<span class="pvar">:id</span>/assign</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"userIds"</span>: [<span class="num">3</span>, <span class="num">5</span>] }</pre>
+        <p class="label">Realtime</p>
+<pre><span class="cm">→ user:assigned  an user:3, user:5</span></pre>
+      </div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-patch">PATCH</span><span class="path">/api/tasks/<span class="pvar">:id</span>/unassign</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"userIds"</span>: [<span class="num">5</span>] }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHARE -->
+  <section id="share">
+    <div class="sec-head">
+      <h2>Share-Link-System</h2>
+      <p>Öffentliche Links mit Berechtigungsstufe und optionalem Ablaufdatum.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-post">POST</span><span class="path">/api/tasks/<span class="pvar">:id</span>/share</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"permission"</span>: <span class="str">"view"</span>, <span class="key">"expiresAt"</span>: <span class="str">"2026-07-01T00:00"</span> }</pre>
+        <p class="label">Response · 201</p>
+<pre>{ <span class="key">"share"</span>: { <span class="key">"token"</span>: <span class="str">"a1B2…"</span>, <span class="key">"url"</span>: <span class="str">"/api/share/a1B2…"</span>, <span class="key">"permission"</span>: <span class="str">"view"</span> } }</pre>
+      </div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-get">GET</span><span class="path">/api/share/<span class="pvar">:token</span></span><span class="lock pub">🌐 öffentlich</span></div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-delete">DELETE</span><span class="path">/api/tasks/<span class="pvar">:id</span>/share</span><span class="ep-desc">Link deaktivieren</span></div>
+    </div>
+  </section>
+
+  <!-- COMMENTS -->
+  <section id="comments">
+    <div class="sec-head">
+      <h2>Kommentare &amp; Notizen</h2>
+      <p>Diskussion an der Aufgabe — in Echtzeit für alle Beteiligten sichtbar.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-get">GET</span><span class="path">/api/tasks/<span class="pvar">:id</span>/comments</span><span class="lock">🔒 auth</span></div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-post">POST</span><span class="path">/api/tasks/<span class="pvar">:id</span>/comments</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"content"</span>: <span class="str">"Ich übernehme die Folien."</span> }</pre>
+        <p class="label">Realtime</p>
+<pre><span class="cm">→ comment:added  an alle Beteiligten</span></pre>
+      </div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-delete">DELETE</span><span class="path">/api/tasks/<span class="pvar">:id</span>/comments/<span class="pvar">:commentId</span></span><span class="ep-desc">nur Verfasser</span></div>
+    </div>
+  </section>
+
+  <!-- TEAMS -->
+  <section id="teams">
+    <div class="sec-head">
+      <h2>Teams &amp; Mitglieder</h2>
+      <p>Teams gruppieren Aufgaben und Mitglieder; Einladung per E-Mail.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-post">POST</span><span class="path">/api/teams</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"name"</span>: <span class="str">"Projektgruppe Bio"</span> }</pre>
+      </div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head"><span class="method m-get">GET</span><span class="path">/api/teams/<span class="pvar">:id</span></span><span class="ep-desc">Details + Mitglieder</span></div>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-post">POST</span><span class="path">/api/teams/<span class="pvar">:id</span>/invite</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Request</p>
+<pre>{ <span class="key">"email"</span>: <span class="str">"max@schule.de"</span> }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDIT -->
+  <section id="audit">
+    <div class="sec-head">
+      <h2>Audit-Log</h2>
+      <p>Lückenloser Verlauf jeder Aufgabe: erstellt, bearbeitet, zugewiesen, kommentiert, gelöscht.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-get">GET</span><span class="path">/api/tasks/<span class="pvar">:id</span>/audit</span><span class="lock">🔒 auth</span></div>
+      <div class="ep-body">
+        <p class="label">Response · 200</p>
+<pre>{
+  <span class="key">"audit"</span>: [{
+    <span class="key">"action"</span>: <span class="str">"task.updated"</span>,
+    <span class="key">"user_name"</span>: <span class="str">"Lea M."</span>,
+    <span class="key">"changes"</span>: { <span class="key">"status"</span>: { <span class="key">"from"</span>: <span class="str">"todo"</span>, <span class="key">"to"</span>: <span class="str">"done"</span> } },
+    <span class="key">"created_at"</span>: <span class="str">"2026-06-12 09:14:02"</span>
+  }]
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- REALTIME -->
+  <section id="realtime">
+    <div class="sec-head">
+      <h2>WebSocket-Anbindung</h2>
+      <p>Nativer Browser-WebSocket, kein socket.io. Der Access-Token wird im Handshake übergeben.</p>
+    </div>
+    <div class="endpoint">
+      <div class="ep-head has-body"><span class="method m-get" style="color:var(--ws);background:var(--ws-bg)">WS</span><span class="path">ws://localhost:8090/?token=<span class="pvar">&lt;accessToken&gt;</span></span></div>
+      <div class="ep-body">
+        <p class="label">Client (PWA)</p>
+<pre><span class="cm">// JWT im Handshake — Äquivalent zu socket.io auth.token</span>
+<span class="key">const</span> ws = <span class="key">new</span> WebSocket(`ws://localhost:8090/?token=${token}`);
+
+ws.onmessage = (e) => {
+  <span class="key">const</span> { event, payload } = JSON.parse(e.data);
+  <span class="cm">// task:created | task:updated | task:deleted</span>
+  <span class="cm">// comment:added | user:assigned | team:member_added</span>
+  store.apply(event, payload);
+};</pre>
+        <p class="label">Nach Verbindung</p>
+<pre><span class="cm">Socket tritt automatisch bei:</span>
+  user:&lt;id&gt;            <span class="cm">// persönlicher Room</span>
+  team:&lt;id&gt; …          <span class="cm">// je Teammitgliedschaft</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <p class="footnote">ToDo-Schule · PHP 8.1 + MySQL · JWT-Auth · RFC-6455-WebSocket · 0 externe Abhängigkeiten — siehe README.md &amp; schema.sql.</p>
+</main>
+
+</body>
+</html>

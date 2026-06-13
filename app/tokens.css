@@ -1,0 +1,140 @@
+/* =========================================================================
+   ToDo-Schule — Design System
+   Anchored on the ESG ribbon mark: deep indigo + coral / lime / periwinkle.
+   ========================================================================= */
+
+/* ----------------------------- TOKENS: LIGHT ----------------------------- */
+:root{
+  --font-display:"Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+  --font-ui:"Hanken Grotesk", system-ui, -apple-system, sans-serif;
+
+  /* brand */
+  --indigo:#312F80;  --indigo-600:#3B38A0; --indigo-700:#2A2870; --indigo-300:#8C8AD8;
+  --coral:#FD5266;   --coral-700:#E03650;
+  --lime:#54B948;    --lime-bright:#8FFF53;
+  --blue:#5566F0;    --violet:#6B4FE0;
+  --amber:#E08A2B;
+
+  /* surfaces */
+  --bg:#EFEFF6;
+  --surface:#FFFFFF;
+  --surface-2:#F7F7FB;
+  --surface-3:#F0F0F6;
+  --elevated:#FFFFFF;
+  --border:#E5E5EF;
+  --border-strong:#D6D6E4;
+  --overlay:rgba(22,20,52,.34);
+
+  /* text */
+  --text:#191731;
+  --text-2:#56546F;
+  --text-3:#8987A1;
+  --text-on-accent:#FFFFFF;
+
+  /* accent (tweakable) defaults to indigo */
+  --accent:var(--indigo);
+  --accent-600:var(--indigo-600);
+  --accent-700:var(--indigo-700);
+  --accent-ink:#FFFFFF;
+  --accent-soft:#ECECF8;
+  --accent-soft-2:#E0E0F4;
+  --accent-tint:rgba(49,47,128,.08);
+  --ring:rgba(49,47,128,.35);
+
+  /* status */
+  --st-todo:#8987A1;   --st-todo-bg:#EFEFF4;
+  --st-prog:#5566F0;   --st-prog-bg:#E9EBFE;
+  --st-done:#3E9E45;   --st-done-bg:#E4F4E5;
+
+  /* priority */
+  --pri-high:#E03650;  --pri-high-bg:#FDE7EA;
+  --pri-med:#C9781F;   --pri-med-bg:#FBEEDD;
+  --pri-low:#5470C9;   --pri-low-bg:#E9EDF9;
+
+  /* shape */
+  --r-xs:7px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:24px; --r-pill:999px;
+  --pad: 1;               /* density multiplier (tweakable) */
+  --sh-1:0 1px 2px rgba(25,23,49,.06), 0 1px 3px rgba(25,23,49,.05);
+  --sh-2:0 4px 14px rgba(25,23,49,.08), 0 2px 6px rgba(25,23,49,.05);
+  --sh-3:0 18px 50px rgba(25,23,49,.16), 0 6px 18px rgba(25,23,49,.08);
+  --sh-pop:0 24px 70px rgba(20,18,52,.22), 0 8px 22px rgba(20,18,52,.12);
+}
+
+/* accent variants */
+:root[data-accent="blue"]{ --accent:#3D55E6; --accent-600:#3247CC; --accent-700:#2A3CB0; --accent-soft:#E8EBFE; --accent-soft-2:#D8DDFC; --accent-tint:rgba(61,85,230,.09); --ring:rgba(61,85,230,.38);}
+:root[data-accent="violet"]{ --accent:#6B4FE0; --accent-600:#5C40CC; --accent-700:#4E36AE; --accent-soft:#EEE9FC; --accent-soft-2:#E1D8FA; --accent-tint:rgba(107,79,224,.10); --ring:rgba(107,79,224,.38);}
+:root[data-accent="coral"]{ --accent:#E84459; --accent-600:#D2354A; --accent-700:#B62B3E; --accent-soft:#FDE7EA; --accent-soft-2:#FBD6DB; --accent-tint:rgba(232,68,89,.10); --ring:rgba(232,68,89,.34); --accent-ink:#FFFFFF;}
+
+/* ----------------------------- TOKENS: DARK ------------------------------ */
+:root[data-theme="dark"]{
+  --bg:#0C0B22;
+  --surface:#16142F;
+  --surface-2:#1C1A3C;
+  --surface-3:#23204A;
+  --elevated:#1A1838;
+  --border:#2A2752;
+  --border-strong:#363269;
+  --overlay:rgba(4,3,16,.6);
+
+  --text:#ECEBFA;
+  --text-2:#A8A6C9;
+  --text-3:#76749A;
+
+  --accent:#8784EE; --accent-600:#7472E4; --accent-700:#6361D6;
+  --accent-ink:#0C0B22; --accent-soft:#211F47; --accent-soft-2:#2A2856;
+  --accent-tint:rgba(135,132,238,.14); --ring:rgba(135,132,238,.45);
+
+  --st-todo:#8a88ad;   --st-todo-bg:#211F40;
+  --st-prog:#8E9BFF;   --st-prog-bg:#21244F;
+  --st-done:#5FCB68;   --st-done-bg:#16331F;
+
+  --pri-high:#FF7385;  --pri-high-bg:#3A1B28;
+  --pri-med:#F0A94E;   --pri-med-bg:#352510;
+  --pri-low:#8FA3E8;   --pri-low-bg:#1E2348;
+
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 6px 20px rgba(0,0,0,.4);
+  --sh-3:0 24px 60px rgba(0,0,0,.55);
+  --sh-pop:0 28px 80px rgba(0,0,0,.6);
+}
+:root[data-theme="dark"][data-accent="blue"]{ --accent:#7C8CFF; --accent-600:#6A7BF5; --accent-700:#5C6DE8; --accent-ink:#0C0B22; --accent-soft:#1E2247; --accent-soft-2:#262C58;}
+:root[data-theme="dark"][data-accent="violet"]{ --accent:#9F86FF; --accent-600:#8E74F5; --accent-700:#7E64E6; --accent-ink:#0C0B22; --accent-soft:#241E49; --accent-soft-2:#2D265B;}
+:root[data-theme="dark"][data-accent="coral"]{ --accent:#FF7385; --accent-600:#F5606F; --accent-700:#E64F60; --accent-ink:#1c0b10; --accent-soft:#33161F; --accent-soft-2:#421C28;}
+
+/* --------------------------------- BASE ---------------------------------- */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--font-ui);
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-size:15px;
+  line-height:1.5;
+}
+#root{height:100%}
+button{font-family:inherit;cursor:pointer}
+input,textarea,select{font-family:inherit}
+::selection{background:var(--accent-soft-2)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;margin:0;color:var(--text)}
+a{color:var(--accent);text-decoration:none}
+.tabnum{font-variant-numeric:tabular-nums}
+
+/* scrollbars */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--text-3)}
+
+/* focus */
+:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+
+/* utility */
+.muted{color:var(--text-2)}
+.dim{color:var(--text-3)}
+.row{display:flex;align-items:center}
+.col{display:flex;flex-direction:column}
+.gap-4{gap:4px}.gap-6{gap:6px}.gap-8{gap:8px}.gap-10{gap:10px}.gap-12{gap:12px}.gap-16{gap:16px}
+.grow{flex:1}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}

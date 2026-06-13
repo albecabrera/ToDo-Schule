@@ -1,0 +1,13 @@
+# Abhängigkeiten / Build
+/vendor/
+
+# Umgebung & Secrets
+.env
+
+# Laufzeit
+/storage/ratelimit/
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db

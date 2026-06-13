@@ -1,0 +1,26 @@
+{
+  "name": "ToDo-Schule · Elisabeth-Selbert-Gesamtschule",
+  "short_name": "ToDo-Schule",
+  "description": "Kollaborative Aufgaben, Notizen und Planungen für das Kollegium der ESG Bonn-Bad Godesberg",
+  "lang": "de",
+  "start_url": "./ToDo-Schule.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#312F80",
+  "background_color": "#F4F4FB",
+  "icons": [
+    {
+      "src": "assets/esg-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/esg-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

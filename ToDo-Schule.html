@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="" data-accent="" data-density="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ToDo-Schule · Elisabeth-Selbert-Gesamtschule</title>
+  <meta name="description" content="Kollaborative Aufgabenverwaltung für das Kollegium der ESG Bonn-Bad Godesberg">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#312F80">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ToDo-Schule">
+  <link rel="apple-touch-icon" href="assets/esg-mark.svg">
+  <link rel="icon" href="assets/esg-mark.svg" type="image/svg+xml">
+
+  <!-- fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;550;600;650;700&display=swap" rel="stylesheet">
+
+  <!-- design system -->
+  <link rel="stylesheet" href="app/tokens.css">
+  <link rel="stylesheet" href="app/components.css">
+  <link rel="stylesheet" href="app/screens.css">
+  <link rel="stylesheet" href="app/overlays.css">
+  <link rel="stylesheet" href="app/notes.css">
+  <link rel="stylesheet" href="app/responsive.css">
+
+  <!-- React (Production, self-hosted — kein CDN, kein Babel zur Laufzeit) -->
+  <script defer src="vendor/react.production.min.js"></script>
+  <script defer src="vendor/react-dom.production.min.js"></script>
+
+  <!-- App-Bundle (vorkompiliert via ./build.sh) -->
+  <script defer src="dist/app.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

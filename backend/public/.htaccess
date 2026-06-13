@@ -1,0 +1,15 @@
+# -----------------------------------------------------------------------------
+#  Apache-Rewrite: alle Anfragen auf den Front Controller (public/index.php)
+#  Diese Datei in den DocumentRoot (public/) legen. mod_rewrite muss aktiv sein.
+#  Beim eingebauten PHP-Server (php -S ... -t public) wird sie nicht benötigt.
+# -----------------------------------------------------------------------------
+RewriteEngine On
+
+# Authorization-Header an PHP weiterreichen (für Bearer-Token wichtig).
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# Existierende Dateien direkt ausliefern, sonst auf index.php leiten.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

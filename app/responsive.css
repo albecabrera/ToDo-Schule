@@ -1,0 +1,108 @@
+/* =========================================================================
+   ToDo-Schule — Responsive / Mobile
+   ========================================================================= */
+
+/* ---- new task quick-add FAB (mobile) ---- */
+.fab{
+  display:none;position:fixed;bottom:24px;right:20px;z-index:30;
+  width:56px;height:56px;border-radius:99px;background:var(--accent);color:var(--accent-ink);
+  border:none;box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 55%,transparent);
+  font-size:28px;align-items:center;justify-content:center;
+}
+.fab svg{width:26px;height:26px}
+
+/* ---- sidebar overlay on mobile ---- */
+.sb-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:50;backdrop-filter:blur(2px)}
+.sb-backdrop.open{display:block}
+
+/* ---- page title area on mobile ---- */
+@media (max-width:900px){
+  .login{grid-template-columns:1fr}
+  .login-brand{display:none}
+
+  .sidebar{position:fixed;top:0;left:0;height:100%;z-index:60;
+    width:280px!important; /* override inline resize/collapse on mobile */
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.22,1,.36,1)!important}
+  .sidebar.open{transform:none;box-shadow:var(--sh-pop)}
+  .sb-resizer{display:none} /* no resize handle on mobile */
+  .topbar .menu-btn{display:flex}
+  .topbar .sp{flex:1}
+  .topbar .search{display:none}
+  .page-h h1{font-size:18px}
+  .content-pad{padding:16px 14px 80px}
+  .fab{display:flex}
+  .board{padding:6px 0 80px}
+  .bcol{flex:0 0 285px}
+  .drawer{width:100vw}
+  .notif-panel{right:8px;width:calc(100vw - 16px)}
+  .presence{display:none}
+}
+
+@media (max-width:560px){
+  .trow .tright{gap:8px}
+  .trow .cmt{display:none}
+  .subbar{gap:8px}
+  .modal{padding:12px}
+  .modal-card{max-width:100%}
+  .notif-panel{top:auto;bottom:60px;max-height:70vh}
+  .toasts{right:12px;bottom:70px;width:calc(100vw - 24px)}
+}
+
+/* ---- density tweaks ---- */
+:root[data-density="compact"]{ --pad:.75 }
+:root[data-density="spacious"]{ --pad:1.3 }
+
+/* ---- onboarding steps indicator ---- */
+.steps{display:flex;gap:8px;align-items:center}
+.step-dot{width:7px;height:7px;border-radius:99px;background:var(--border-strong);transition:.2s}
+.step-dot.on{width:20px;background:var(--accent)}
+
+/* ---- misc refinements ---- */
+.text-gradient{background:linear-gradient(110deg,var(--accent) 0%,var(--coral) 75%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
+.card-pad{padding:20px}
+.badge{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:11.5px;font-weight:700}
+.badge-new{background:var(--coral);color:#fff}
+.activity-bar{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-top:10px;display:flex;gap:14px;align-items:center;font-size:13.5px;color:var(--text-2)}
+.activity-bar svg{color:var(--accent)}
+.progress-row{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2)}
+
+/* ---- login onboarding form ---- */
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fadein{animation:fadein .32s cubic-bezier(.22,1,.36,1) forwards}
+
+/* ---- quick info card under topbar (team summary) ---- */
+.team-banner{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border);flex:none;background:var(--surface)}
+.team-banner .tic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.team-banner h2{font-size:17px;letter-spacing:-.015em}
+.team-banner p{font-size:13px;color:var(--text-2);margin-top:2px}
+.team-banner .sp{flex:1}
+.team-stats{display:flex;gap:22px}
+.ts{display:flex;flex-direction:column;align-items:center;font-size:13px;color:var(--text-2)}
+.ts strong{font-family:var(--font-display);font-size:21px;font-weight:700;color:var(--text)}
+
+/* ---- user profile popover content ---- */
+.profile-pop{max-width:280px;padding:4px}
+.profile-pop .top{display:flex;gap:13px;padding:10px 8px;align-items:center}
+.profile-pop .nm{font-size:15px;font-weight:700}
+.profile-pop .em{font-size:12.5px;color:var(--text-3)}
+.profile-pop .role{display:inline-flex;align-items:center;height:21px;padding:0 9px;border-radius:99px;font-size:11.5px;font-weight:700;background:var(--accent-soft);color:var(--accent);margin-top:4px}
+
+/* ---- new task form in modal ---- */
+.nt-form{display:flex;flex-direction:column;gap:16px}
+.nt-row{display:flex;gap:10px}
+.nt-row > *{flex:1}
+.nt-title{border:none;background:transparent;font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--text);width:100%;padding:2px 0 10px;border-bottom:2px solid var(--border);outline:none}
+.nt-title:focus{border-bottom-color:var(--accent)}
+.nt-title::placeholder{color:var(--text-3)}
+
+/* ---- drag hint on board ---- */
+.dragging{opacity:.55;box-shadow:var(--sh-pop) !important}
+.dropzone{border:2.5px dashed var(--accent) !important;background:var(--accent-tint) !important}
+
+/* ---- settings / tweaks panel glue ---- */
+tweaks-panel{z-index:200}
+
+/* ---- print ---- */
+@media print{.sidebar,.topbar,.fab,.toasts,.drawer,.modal,.scrim{display:none!important}.app{grid-template-columns:1fr}.content{max-height:none;overflow:visible}}

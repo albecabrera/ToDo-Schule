@@ -1,0 +1,100 @@
+/* ========================================================================
+   ToDo-Schule — Notizen & Planungen
+   ======================================================================== */
+
+.notes-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.notes-bar .sp{flex:1}
+
+.notes-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+  gap:14px;align-items:start;
+}
+
+.note-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px 16px 13px;cursor:pointer;display:flex;flex-direction:column;gap:9px;
+  transition:box-shadow .15s,transform .15s,border-color .15s;
+}
+.note-card:hover,.note-card:focus-visible{
+  box-shadow:var(--sh-2);transform:translateY(-1px);border-color:var(--accent,#312F80);
+  outline:none;
+}
+
+.nc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nc-kind{font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--text-2);
+  background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:3px 9px}
+.nc-team{font-size:11.5px;font-weight:650;border-radius:99px;padding:3px 9px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.nc-team.private{background:var(--bg);color:var(--text-3)}
+
+.nc-title{font-size:15.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+
+.nc-content{font-size:13px;color:var(--text-2);line-height:1.5;display:flex;flex-direction:column;gap:2px}
+.nc-line{white-space:pre-wrap;word-break:break-word}
+.nc-gap{height:6px}
+.nc-more{font-size:11.5px;color:var(--text-3);font-style:italic;margin-top:2px}
+
+.nc-check{display:flex;align-items:flex-start;gap:7px;cursor:pointer;padding:1px 0}
+.nc-check input{margin-top:3px;accent-color:var(--accent,#312F80);cursor:pointer;flex:none}
+.nc-check.done span{text-decoration:line-through;color:var(--text-3)}
+
+.nc-progress{font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 9px;
+  background:var(--bg);border:1px solid var(--border);color:var(--text-2)}
+.nc-progress.all-done{background:#54B94822;color:#3d8a35;border-color:#54B94855}
+
+/* ── Bugs-Popup: minimalistische Checkliste ───────────────────────────── */
+.bugs-card{
+  width:100%;max-width:360px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-xl);
+  box-shadow:var(--sh-pop);padding:14px 16px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.bugs-head{display:flex;align-items:center;justify-content:space-between;
+  font-size:15px;font-weight:750;letter-spacing:-.01em}
+.bugs-list{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto}
+.bugs-item{display:flex;align-items:center;gap:9px;padding:5px 4px;border-radius:8px;font-size:13.5px}
+.bugs-item:hover{background:var(--bg)}
+.bugs-item .grow{flex:1;word-break:break-word}
+.bugs-item input{accent-color:#FD5266;cursor:pointer;flex:none}
+.bugs-item.done .grow{text-decoration:line-through;color:var(--text-3)}
+.bugs-del{
+  border:none;background:none;color:var(--text-3);font-size:16px;line-height:1;
+  cursor:pointer;padding:0 4px;border-radius:6px;opacity:0;flex:none;
+}
+.bugs-item:hover .bugs-del{opacity:1}
+.bugs-del:hover{color:#FD5266}
+.bugs-input{
+  border:none;outline:none;background:var(--bg);border-radius:10px;
+  padding:10px 12px;font-size:13.5px;font-family:inherit;color:var(--text-1,inherit);
+}
+.bugs-input::placeholder{color:var(--text-3)}
+
+/* Roter News-/Schnellnotiz-Button in der Topbar */
+.btn-news{
+  background:#FD5266;color:#fff;border:none;font-weight:700;
+  box-shadow:0 2px 8px #FD526655;
+}
+.btn-news:hover{background:#e8425a;color:#fff}
+
+.nc-foot{display:flex;align-items:center;justify-content:space-between;
+  margin-top:auto;padding-top:6px;border-top:1px dashed var(--border)}
+.nc-author{font-size:12px;font-weight:600;color:var(--text-2)}
+.nc-time{font-size:11.5px;color:var(--text-3)}
+
+.notes-empty{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:60px 20px;color:var(--text-2);text-align:center;
+}
+
+.note-editor .note-textarea{
+  resize:vertical;min-height:220px;line-height:1.55;font-size:14px;
+  font-family:inherit;
+}
+.note-meta-row{align-items:flex-end}
+.note-meta-row .grow{flex:1}
+.note-meta-row select.input{width:100%;height:40px}
+
+@media (max-width:640px){
+  .notes-grid{grid-template-columns:1fr}
+  .notes-bar{flex-wrap:wrap}
+}

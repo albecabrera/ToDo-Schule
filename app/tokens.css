@@ -58,6 +58,18 @@
   --sh-2:0 4px 14px rgba(25,23,49,.08), 0 2px 6px rgba(25,23,49,.05);
   --sh-3:0 18px 50px rgba(25,23,49,.16), 0 6px 18px rgba(25,23,49,.08);
   --sh-pop:0 24px 70px rgba(20,18,52,.22), 0 8px 22px rgba(20,18,52,.12);
+
+  /* ---- Liquid Glass (iOS-style frosted surfaces) ---- */
+  --glass-bg:rgba(255,255,255,.62);          /* translucent surface */
+  --glass-bg-strong:rgba(255,255,255,.78);   /* less see-through (modals) */
+  --glass-bg-soft:rgba(255,255,255,.45);     /* very light (chips, bars) */
+  --glass-border:rgba(255,255,255,.7);       /* bright hairline (top edge) */
+  --glass-border-2:rgba(140,138,180,.22);    /* subtle outline */
+  --glass-blur:22px;
+  --glass-saturate:180%;
+  --glass-hi:rgba(255,255,255,.55);          /* specular highlight */
+  --glass-sh:0 8px 30px rgba(25,23,49,.10), 0 2px 8px rgba(25,23,49,.06);
+  --glass-sh-pop:0 30px 80px rgba(20,18,52,.22), 0 10px 28px rgba(20,18,52,.12);
 }
 
 /* accent variants */
@@ -96,6 +108,18 @@
   --sh-2:0 6px 20px rgba(0,0,0,.4);
   --sh-3:0 24px 60px rgba(0,0,0,.55);
   --sh-pop:0 28px 80px rgba(0,0,0,.6);
+
+  /* ---- Liquid Glass (dark) ---- */
+  --glass-bg:rgba(28,26,60,.55);
+  --glass-bg-strong:rgba(28,26,60,.74);
+  --glass-bg-soft:rgba(40,38,80,.38);
+  --glass-border:rgba(150,148,210,.22);
+  --glass-border-2:rgba(150,148,210,.14);
+  --glass-blur:24px;
+  --glass-saturate:170%;
+  --glass-hi:rgba(180,178,240,.16);
+  --glass-sh:0 8px 30px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.35);
+  --glass-sh-pop:0 30px 80px rgba(0,0,0,.6), 0 10px 28px rgba(0,0,0,.4);
 }
 :root[data-theme="dark"][data-accent="blue"]{ --accent:#7C8CFF; --accent-600:#6A7BF5; --accent-700:#5C6DE8; --accent-ink:#0C0B22; --accent-soft:#1E2247; --accent-soft-2:#262C58;}
 :root[data-theme="dark"][data-accent="violet"]{ --accent:#9F86FF; --accent-600:#8E74F5; --accent-700:#7E64E6; --accent-ink:#0C0B22; --accent-soft:#241E49; --accent-soft-2:#2D265B;}

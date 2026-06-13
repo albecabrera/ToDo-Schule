@@ -1,0 +1,154 @@
+/* =========================================================================
+   ToDo-Schule — Liquid Glass (iOS-Style)
+   Frosted, translucent surfaces with depth. Loaded LAST so it layers over
+   the base design system. Reuses --glass-* tokens (tokens.css).
+   ========================================================================= */
+
+/* Reusable glass primitive */
+.glass,
+.topbar,
+.sidebar,
+.kiosk-card,
+.note-card,
+.modal-card,
+.bugs-card,
+.drawer,
+.notif-panel,
+.dm-list,
+.dm-pane-head,
+.chat-composer,
+.team-banner,
+.fab,
+.toast {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+/* Ambient background: soft color blobs so the frosting has something to
+   refract (otherwise glass reads as flat grey). */
+.app, .login {
+  position: relative;
+}
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 8% 0%,  color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 100% 12%, color-mix(in srgb, var(--coral) 16%, transparent), transparent 65%),
+    radial-gradient(55% 50% at 85% 100%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 0% 100%, color-mix(in srgb, var(--lime) 12%, transparent), transparent 70%);
+  filter: saturate(118%);
+}
+.app > * { position: relative; z-index: 1; }
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--glass-bg) !important;
+  border-bottom: 1px solid var(--glass-border-2);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--glass-bg) !important;
+  border-right: 1px solid var(--glass-border-2);
+  box-shadow: inset -1px 0 0 var(--glass-hi);
+}
+
+/* ── Cards (tasks / kiosk / notes) ─────────────────────────────────────── */
+.kiosk-card, .note-card {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border-2);
+  box-shadow: var(--glass-sh), inset 0 1px 0 var(--glass-hi);
+  border-radius: var(--r-lg);
+}
+.kiosk-card:hover, .note-card:hover {
+  box-shadow: var(--glass-sh-pop), inset 0 1px 0 var(--glass-hi);
+  transform: translateY(-3px);
+}
+
+/* List rows: soft glass tint on hover instead of flat grey */
+.trow:hover { background: var(--glass-bg-soft) !important; }
+
+/* ── Modals / scrim / drawer / panels ──────────────────────────────────── */
+.scrim {
+  background: color-mix(in srgb, var(--overlay) 70%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+}
+.modal-card, .bugs-card, .drawer, .notif-panel {
+  background: var(--glass-bg-strong) !important;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-sh-pop), inset 0 1px 0 var(--glass-hi);
+  border-radius: var(--r-xl);
+}
+.drawer { border-radius: var(--r-xl) 0 0 var(--r-xl); }
+
+/* ── Chat (glass panels + bubbles) ─────────────────────────────────────── */
+.dm-list { background: var(--glass-bg-soft) !important; border-right: 1px solid var(--glass-border-2); }
+.dm-pane-head, .chat-composer {
+  background: var(--glass-bg) !important;
+  border-color: var(--glass-border-2);
+}
+.chat-bubble {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
+}
+.chat-msg:not(.me) .chat-bubble {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-2);
+}
+.dm-thread.active { background: color-mix(in srgb, var(--accent) 14%, transparent) !important; }
+
+/* ── Floating action button ────────────────────────────────────────────── */
+.fab {
+  background: color-mix(in srgb, var(--accent) 82%, transparent) !important;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-sh-pop), inset 0 1px 0 var(--glass-hi);
+}
+
+/* ── Buttons & chips: subtle glass + specular edge ─────────────────────── */
+.btn-ghost, .btn-outline, .iconbtn, .seg, .fpill, .chip, .search {
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+.seg, .search {
+  background: var(--glass-bg-soft) !important;
+  border: 1px solid var(--glass-border-2);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
+}
+.seg button.on {
+  background: var(--glass-bg-strong);
+  box-shadow: var(--sh-1), inset 0 1px 0 var(--glass-hi);
+}
+.btn-primary {
+  box-shadow: var(--sh-2), inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent);
+}
+
+/* ── Toasts ────────────────────────────────────────────────────────────── */
+.toast {
+  background: var(--glass-bg-strong) !important;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-sh-pop), inset 0 1px 0 var(--glass-hi);
+}
+
+/* ── Team banner ───────────────────────────────────────────────────────── */
+.team-banner {
+  background: var(--glass-bg-soft) !important;
+  border-bottom: 1px solid var(--glass-border-2);
+}
+
+/* ── Vollbild focus overlay: deeper glass ──────────────────────────────── */
+.kiosk-focus-overlay { backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+
+/* ── Graceful fallback: no backdrop-filter support → opaque surfaces ────── */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar, .sidebar, .kiosk-card, .note-card, .modal-card, .bugs-card,
+  .drawer, .notif-panel, .dm-list, .dm-pane-head, .chat-composer, .toast, .fab {
+    background: var(--surface) !important;
+  }
+}

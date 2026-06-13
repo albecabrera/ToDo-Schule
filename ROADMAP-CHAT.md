@@ -16,6 +16,7 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 | **Typing** ("schreibt…") | `POST /api/chat/typing` (throttle 2.5s) → WS `chat:typing` → se borra a los 4s | `ChatController::typing` |
 | **Read receipts** (✓/✓✓) | Solo DM. `GET /api/chat?to=` marca leído + emite `chat:read`; tabla `chat_reads(user_id,peer_id,last_read_id)` | `ChatController::index/read`, `ChatMessage::markRead/lastReadBy` |
 | **Reacciones emoji** | `POST /api/chat/:id/react` (toggle) → tabla `chat_reactions` → WS `chat:reaction` | `ChatController::react`, `ChatMessage::toggle/reactionsFor` |
+| **🎤 Mensajes de voz** | `MediaRecorder` (audio/webm) → sube por `/api/chat/upload` → adjunto de audio; reproductor `<audio>` inline. Sin cambios de backend (reutiliza adjuntos). Requiere HTTPS/localhost para el micrófono | `dist/chat.js` (MessagePane: startRec/stopRec, ChatAttachment: isAudioFile) |
 
 **Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
 `chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
@@ -35,13 +36,7 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 - Columna `reply_to_id` en `chat_messages`.
 - UI: botón "Responder" (ya hay acciones al hover) → cita el mensaje arriba del composer; la burbuja muestra el fragmento citado.
 
-### 3. 🎤 Mensajes de voz — **esfuerzo medio · feature estrella práctica**
-- Grabar con `MediaRecorder` (webm/opus) en el composer.
-- Subir vía el endpoint de adjuntos ya existente (`/api/chat/upload`) — reutiliza todo.
-- UI: botón micrófono → graba → previsualiza → envía como adjunto de audio con waveform/reproductor (`<audio>`).
-- Sin cambios de backend (ya soporta adjuntos arbitrarios).
-
-### 4. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
+### 3. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
 - El puente WS por tabla `events` (~1s) NO sirve para señalización en vivo.
 - Requiere canal de señalización dedicado (WS directo cliente↔servidor para
   ofertas/answers/ICE) + STUN/TURN.

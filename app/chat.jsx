@@ -1,4 +1,4 @@
-// app/chat.jsx — ToDo-Schule Chat (Quelle; dist/chat.js ist die laufzeit, beide synchron halten)
+// app/chat.jsx — ToDo-Schule Chat (Quelle; dist/chat.js ist die Laufzeit, synchron halten)
 // Kollegium + Direktnachrichten · Datei-Upload · Edit/Delete
 // Typing-Indicator · Lesebestätigung (DM) · Emoji-Reaktionen
 (function(){
@@ -39,9 +39,17 @@ function ThreadItem({label,sub,avatarEl,active,unread,onClick}){
   );
 }
 
+function isAudioFile(name){const e=(name||"").split(".").pop().toLowerCase();return["webm","ogg","opus","mp3","m4a","wav","aac"].includes(e);}
 function ChatAttachment({url,name,isMe}){
   const API=(window.ESG_API&&window.ESG_API.baseUrl&&window.ESG_API.baseUrl())||window.ESG_API_BASE||"http://127.0.0.1:8085";
   const fullUrl=API+url;
+  // Sprachnachricht / Audio → eingebetteter Player
+  if(isAudioFile(name)){
+    return h("div",{className:"chat-voice"+(isMe?" me":"")},
+      h("span",{className:"chat-voice-icon"},"🎤"),
+      h("audio",{className:"chat-voice-audio",controls:true,preload:"metadata",src:fullUrl})
+    );
+  }
   return h("a",{className:"chat-attachment"+(isMe?" me":""),href:fullUrl,target:"_blank",rel:"noopener noreferrer",download:name||true},
     h("span",{className:"chat-att-icon"},fileIcon(name)),
     h("div",{className:"chat-att-body"},
@@ -52,12 +60,52 @@ function ChatAttachment({url,name,isMe}){
   );
 }
 
-function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName}){
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice}){
   const bottomRef=T(null);
   const[editingId,setEditingId]=S(null);
   const[editText,setEditText]=S("");
   const[pickerId,setPickerId]=S(null); // Nachricht, deren Emoji-Picker offen ist
+  const[recording,setRecording]=S(false);
+  const[recSecs,setRecSecs]=S(0);
+  const recRef=T(null),chunksRef=T([]),streamRef=T(null),recTimer=T(null),sendOnStop=T(false);
   v(()=>{if(bottomRef.current)bottomRef.current.scrollIntoView({behavior:"smooth"});},[messages,typingName]);
+
+  async function startRec(){
+    if(!navigator.mediaDevices||!window.MediaRecorder){
+      window._addToast&&window._addToast()({title:"Nicht unterstützt",body:"Sprachaufnahme braucht HTTPS und einen aktuellen Browser."});
+      return;
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      streamRef.current=stream;chunksRef.current=[];sendOnStop.current=false;
+      const mime=MediaRecorder.isTypeSupported("audio/webm")?"audio/webm":"";
+      const rec=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+      rec.ondataavailable=e=>{if(e.data.size>0)chunksRef.current.push(e.data);};
+      rec.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        clearInterval(recTimer.current);
+        const blob=new Blob(chunksRef.current,{type:chunksRef.current[0]?.type||"audio/webm"});
+        const send=sendOnStop.current;
+        setRecording(false);setRecSecs(0);
+        if(send&&blob.size>0){
+          const ext=(blob.type.split("/")[1]||"webm").split(";")[0];
+          const file=new File([blob],"Sprachnachricht-"+Date.now()+"."+ext,{type:blob.type});
+          onSendVoice(file);
+        }
+      };
+      recRef.current=rec;rec.start();
+      setRecording(true);setRecSecs(0);
+      recTimer.current=setInterval(()=>setRecSecs(s=>s+1),1000);
+    }catch(err){
+      window._addToast&&window._addToast()({title:"Kein Mikrofon",body:"Zugriff auf das Mikrofon wurde verweigert."});
+    }
+  }
+  function stopRec(send){
+    sendOnStop.current=send;
+    if(recRef.current&&recRef.current.state!=="inactive")recRef.current.stop();
+  }
+  v(()=>()=>{if(recRef.current&&recRef.current.state!=="inactive")recRef.current.stop();clearInterval(recTimer.current);},[]);
+  const recMMSS=(n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0"))(recSecs);
   function startEdit(m){setEditingId(m.id);setEditText(m.content||"");}
   function cancelEdit(){setEditingId(null);setEditText("");}
   async function saveEdit(m){
@@ -136,16 +184,27 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
       h("span",{className:"chat-pending-name"},pendingFile.name),
       h("button",{className:"chat-pending-rm",onClick:onClearFile,title:"Entfernen"},"×")
     ),
-    h("form",{className:"chat-composer",onSubmit:onSend},
-      h("input",{type:"file",ref:fileInputRef,style:{display:"none"},onChange:onFileSelect}),
-      h("button",{type:"button",className:"iconbtn chat-attach-btn",title:"Datei anhängen",onClick:()=>fileInputRef.current&&fileInputRef.current.click()},
-        h(Icon,{n:"paperclip",size:17})
-      ),
-      h("input",{className:"chat-input",placeholder,value:input,onChange:e=>setInput(e.target.value),disabled:sending,autoComplete:"off"}),
-      h("button",{type:"submit",className:"btn btn-primary btn-sm",disabled:(!input.trim()&&!pendingFile)||sending},
-        sending?h(Icon,{n:"loader",size:15}):h(Icon,{n:"send",size:15})
-      )
-    )
+    recording
+      ?h("div",{className:"chat-composer chat-recording"},
+          h("button",{type:"button",className:"iconbtn chat-rec-cancel",title:"Abbrechen",onClick:()=>stopRec(false)},h(Icon,{n:"trash",size:17})),
+          h("span",{className:"chat-rec-dot"}),
+          h("span",{className:"chat-rec-time"},recMMSS),
+          h("span",{className:"chat-rec-label"},"Aufnahme…"),
+          h("div",{className:"grow"}),
+          h("button",{type:"button",className:"btn btn-primary btn-sm chat-rec-send",title:"Senden",onClick:()=>stopRec(true)},h(Icon,{n:"send",size:15}))
+        )
+      :h("form",{className:"chat-composer",onSubmit:onSend},
+          h("input",{type:"file",ref:fileInputRef,style:{display:"none"},onChange:onFileSelect}),
+          h("button",{type:"button",className:"iconbtn chat-attach-btn",title:"Datei anhängen",onClick:()=>fileInputRef.current&&fileInputRef.current.click()},
+            h(Icon,{n:"paperclip",size:17})
+          ),
+          h("input",{className:"chat-input",placeholder,value:input,onChange:e=>setInput(e.target.value),disabled:sending,autoComplete:"off"}),
+          (input.trim()||pendingFile)
+            ?h("button",{type:"submit",className:"btn btn-primary btn-sm",disabled:sending},
+                sending?h(Icon,{n:"loader",size:15}):h(Icon,{n:"send",size:15}))
+            :h("button",{type:"button",className:"iconbtn chat-mic-btn",title:"Sprachnachricht aufnehmen",disabled:sending,onClick:startRec},
+                h(Icon,{n:"mic",size:18}))
+        )
   );
 }
 
@@ -314,6 +373,24 @@ function ChatView(){
     }
   }
 
+  async function deliver(text,file){
+    let attachmentUrl=null,attachmentName=null;
+    if(file){
+      const fd=new FormData();
+      fd.append("file",file);
+      const up=await window.ESG_API.uploadFile("/api/chat/upload",fd);
+      attachmentUrl=up.url;
+      attachmentName=up.name;
+    }
+    const body={content:text};
+    if(threadId!==null)body.to=threadId;
+    if(attachmentUrl)body.attachment_url=attachmentUrl;
+    if(attachmentName)body.attachment_name=attachmentName;
+    const data=await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
+    const m=mapMsg(data.message);
+    setThreads(prev=>{const arr=prev[KEY]||[];return arr.some(x=>x.id===m.id)?prev:{...prev,[KEY]:[...arr,m]};});
+  }
+
   async function send(e){
     e.preventDefault();
     const text=input.trim();
@@ -321,30 +398,24 @@ function ChatView(){
     if(sending)return;
     setSending(true);
     setInput("");
-    let attachmentUrl=null,attachmentName=null;
+    const file=pendingFile;
+    setPendingFile(null);
+    if(fileInputRef.current)fileInputRef.current.value="";
     try{
-      if(pendingFile){
-        const fd=new FormData();
-        fd.append("file",pendingFile);
-        const up=await window.ESG_API.uploadFile("/api/chat/upload",fd);
-        attachmentUrl=up.url;
-        attachmentName=up.name;
-        setPendingFile(null);
-        if(fileInputRef.current)fileInputRef.current.value="";
-      }
-      const body={content:text};
-      if(threadId!==null)body.to=threadId;
-      if(attachmentUrl)body.attachment_url=attachmentUrl;
-      if(attachmentName)body.attachment_name=attachmentName;
-      const data=await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
-      const m=mapMsg(data.message);
-      setThreads(prev=>{
-        const arr=prev[KEY]||[];
-        return arr.some(x=>x.id===m.id)?prev:{...prev,[KEY]:[...arr,m]};
-      });
+      await deliver(text,file);
     }catch(err){
       window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gesendet werden."});
       setInput(text);
+    }finally{setSending(false);}
+  }
+
+  async function sendVoice(file){
+    if(sending||!file)return;
+    setSending(true);
+    try{
+      await deliver("",file);
+    }catch(err){
+      window._addToast&&window._addToast()({title:"Fehler",body:"Sprachnachricht konnte nicht gesendet werden."});
     }finally{setSending(false);}
   }
 
@@ -392,7 +463,7 @@ function ChatView(){
           ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
           :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||""))
       ),
-      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName})
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice})
     )
   );
 }

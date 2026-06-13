@@ -449,6 +449,30 @@
 }
 .chat-emoji-opt:hover { transform: scale(1.25); background: var(--surface-2); }
 
+/* ── Voice messages ───────────────────────────────────────────────────── */
+.chat-mic-btn { flex: none; color: var(--text-2); }
+.chat-mic-btn:hover { color: var(--accent); }
+
+.chat-voice {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px; min-width: 220px;
+}
+.chat-voice-icon { font-size: 17px; flex: none; }
+.chat-voice-audio { height: 34px; max-width: 240px; flex: 1; }
+.chat-msg.me .chat-voice-audio { filter: invert(0); }
+
+/* Recording bar (replaces composer while recording) */
+.chat-recording { gap: 10px; }
+.chat-rec-cancel { flex: none; color: var(--coral, #ef4444); }
+.chat-rec-dot {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--coral, #ef4444);
+  flex: none; animation: chat-rec-pulse 1s infinite;
+}
+@keyframes chat-rec-pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+.chat-rec-time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; color: var(--text); }
+.chat-rec-label { font-size: 13px; color: var(--text-3); }
+.chat-rec-send { flex: none; }
+
 /* ── Mobile: single-panel switching ──────────────────────────────────── */
 @media (max-width: 700px) {
   .dm-list   { width: 100%; border-right: none; }

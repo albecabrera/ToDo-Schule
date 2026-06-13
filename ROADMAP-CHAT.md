@@ -17,6 +17,7 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 | **Read receipts** (✓/✓✓) | Solo DM. `GET /api/chat?to=` marca leído + emite `chat:read`; tabla `chat_reads(user_id,peer_id,last_read_id)` | `ChatController::index/read`, `ChatMessage::markRead/lastReadBy` |
 | **Reacciones emoji** | `POST /api/chat/:id/react` (toggle) → tabla `chat_reactions` → WS `chat:reaction` | `ChatController::react`, `ChatMessage::toggle/reactionsFor` |
 | **🎤 Mensajes de voz** | `MediaRecorder` (audio/webm) → sube por `/api/chat/upload` → adjunto de audio; reproductor `<audio>` inline. Sin cambios de backend (reutiliza adjuntos). Requiere HTTPS/localhost para el micrófono | `dist/chat.js` (MessagePane: startRec/stopRec, ChatAttachment: isAudioFile) |
+| **@Menciones** | Autocompletar al escribir `@`; al enviar va `mentions:[ids]`; backend emite `chat:mention` (+push) al mencionado aunque no esté en el hilo; resaltado en la burbuja | `ChatController::store`, `dist/chat.js` (renderMentions, pickMention, deriveMentions), WS case `chat:mention` en `app.min.js` |
 
 **Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
 `chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
@@ -26,17 +27,11 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 
 ## 🔜 Siguiente (pendiente)
 
-### 1. @Menciones con notificación dirigida — **esfuerzo bajo**
-- Parsear `@Nombre` al enviar; resolver a `user_id`.
-- Emitir `user:assigned`-style notify + push al mencionado aunque no esté en el hilo.
-- UI: autocompletar al escribir `@`, resaltar la mención en la burbuja.
-- Backend: en `ChatController::store`, detectar menciones → `Emitter::emit('user:<id>','chat:mention',…)`.
-
-### 2. Responder a un mensaje (reply / quote) — **esfuerzo bajo-medio**
+### 1. Responder a un mensaje (reply / quote) — **esfuerzo bajo-medio**
 - Columna `reply_to_id` en `chat_messages`.
 - UI: botón "Responder" (ya hay acciones al hover) → cita el mensaje arriba del composer; la burbuja muestra el fragmento citado.
 
-### 3. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
+### 2. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
 - El puente WS por tabla `events` (~1s) NO sirve para señalización en vivo.
 - Requiere canal de señalización dedicado (WS directo cliente↔servidor para
   ofertas/answers/ICE) + STUN/TURN.

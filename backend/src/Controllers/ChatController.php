@@ -162,6 +162,24 @@ final class ChatController
 
         self::fanOut($message, $recipientId, $req->userId(), 'chat:message');
 
+        // @Erwähnungen: gezielte Benachrichtigung (+ Push) an genannte Kolleg:innen,
+        // auch wenn sie den Thread gerade nicht offen haben (v. a. im Gruppenchat).
+        $mentions = is_array($req->body['mentions'] ?? null) ? $req->body['mentions'] : [];
+        $byName   = (string) ($message['user_name'] ?? '');
+        $preview  = $content !== '' ? mb_substr($content, 0, 120) : '🎤 Sprachnachricht';
+        foreach (array_unique(array_map('intval', $mentions)) as $uid) {
+            if ($uid <= 0 || $uid === $req->userId()) {
+                continue;
+            }
+            Emitter::emit('user:' . $uid, 'chat:mention', [
+                'by'       => $req->userId(),
+                'byName'   => $byName,
+                'to'       => $recipientId,
+                'preview'  => $preview,
+                'message'  => $message,
+            ]);
+        }
+
         Response::json(['message' => $message], 201);
     }
 

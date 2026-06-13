@@ -28,7 +28,7 @@ final class Emitter
      * @param array  $payload beliebige JSON-Nutzdaten
      */
     /** Events, die einen Web-Push an einen einzelnen Nutzer auslösen. */
-    private const PUSH_EVENTS = ['user:assigned', 'comment:added', 'chat:message', 'note:created'];
+    private const PUSH_EVENTS = ['user:assigned', 'comment:added', 'chat:message', 'chat:mention', 'note:created'];
 
     public static function emit(string $channel, string $event, array $payload): void
     {

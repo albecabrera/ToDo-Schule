@@ -473,6 +473,35 @@
 .chat-rec-label { font-size: 13px; color: var(--text-3); }
 .chat-rec-send { flex: none; }
 
+/* ── @Mentions ────────────────────────────────────────────────────────── */
+.chat-mention {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--accent-soft);
+  padding: 0 3px; border-radius: 5px;
+}
+.chat-msg.me .chat-mention {
+  color: #fff; background: rgba(255,255,255,.22);
+}
+.chat-mention.me { box-shadow: 0 0 0 1.5px var(--accent); }
+
+.chat-mention-menu {
+  display: flex; flex-direction: column;
+  margin: 0 16px; border: 1px solid var(--glass-border, var(--border));
+  background: var(--glass-bg-strong, var(--surface));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--r-md); box-shadow: var(--glass-sh-pop, var(--sh-3));
+  overflow: hidden;
+}
+.chat-mention-opt {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; border: none; background: transparent;
+  cursor: pointer; text-align: left; width: 100%;
+}
+.chat-mention-opt:hover { background: var(--accent-soft); }
+.chat-mention-name { font-size: 14px; font-weight: 600; color: var(--text); }
+
 /* ── Mobile: single-panel switching ──────────────────────────────────── */
 @media (max-width: 700px) {
   .dm-list   { width: 100%; border-right: none; }

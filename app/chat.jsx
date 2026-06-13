@@ -13,6 +13,22 @@ function fmtDate(ts){if(!ts)return"";const d=new Date(ts),today=new Date();if(d.
 function groupByDate(msgs){const groups=[];let curDate=null;msgs.forEach(m=>{const d=new Date(m.ts).toDateString();if(d!==curDate){groups.push({date:fmtDate(m.ts),messages:[m]});curDate=d;}else groups[groups.length-1].messages.push(m);});return groups;}
 // Reaktionen nach Emoji bündeln → [{emoji,count,mine,names}]
 function groupReactions(reactions,meId){const map={};(reactions||[]).forEach(r=>{(map[r.emoji]||(map[r.emoji]={emoji:r.emoji,count:0,mine:false,names:[]})).count++;if(r.userId===meId)map[r.emoji].mine=true;map[r.emoji].names.push(r.userName||"?");});return Object.values(map);}
+function escapeRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+// Erwähnungen (@Name) im Text hervorheben.
+function renderMentions(content,names,meName){
+  if(!content||!names||!names.length)return content;
+  const sorted=[...names].sort((a,b)=>b.length-a.length);
+  const re=new RegExp("@("+sorted.map(escapeRe).join("|")+")","g");
+  const out=[];let last=0,m,key=0;
+  while((m=re.exec(content))!==null){
+    if(m.index>last)out.push(content.slice(last,m.index));
+    const self=meName&&m[1]===meName;
+    out.push(h("span",{key:key++,className:"chat-mention"+(self?" me":"")},"@"+m[1]));
+    last=m.index+m[0].length;
+  }
+  if(last<content.length)out.push(content.slice(last));
+  return out.length?out:content;
+}
 
 function fileIcon(name){
   if(!name)return"📄";
@@ -106,6 +122,21 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
   }
   v(()=>()=>{if(recRef.current&&recRef.current.state!=="inactive")recRef.current.stop();clearInterval(recTimer.current);},[]);
   const recMMSS=(n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0"))(recSecs);
+
+  // @Erwähnungen: Autovervollständigung
+  const composerRef=T(null);
+  const colleagues=(USERS||[]).filter(u=>u.id!==ME.id);
+  const colleagueNames=colleagues.map(u=>u.name);
+  const mq=(input||"").match(/@([\p{L}\p{N}_\-]*)$/u);
+  const mentionQuery=mq?mq[1].toLowerCase():null;
+  const mentionMatches=mentionQuery!==null
+    ?colleagues.filter(u=>{const n=(u.name||"").toLowerCase(),f=n.split(" ")[0];return mentionQuery===""||n.startsWith(mentionQuery)||f.startsWith(mentionQuery)||n.includes(mentionQuery);}).slice(0,5)
+    :[];
+  function pickMention(u){
+    const next=(input||"").replace(/@[\p{L}\p{N}_\-]*$/u,"@"+u.name+" ");
+    setInput(next);
+    if(composerRef.current)composerRef.current.focus();
+  }
   function startEdit(m){setEditingId(m.id);setEditText(m.content||"");}
   function cancelEdit(){setEditingId(null);setEditText("");}
   async function saveEdit(m){
@@ -147,7 +178,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                       )
                     )
                   :h(FR,null,
-                      m.content&&h("div",{className:"chat-text"},m.content),
+                      m.content&&h("div",{className:"chat-text"},renderMentions(m.content,colleagueNames,ME.name)),
                       m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
                       h("div",{className:"chat-ts"},
                         fmtTime(m.ts),
@@ -184,6 +215,12 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
       h("span",{className:"chat-pending-name"},pendingFile.name),
       h("button",{className:"chat-pending-rm",onClick:onClearFile,title:"Entfernen"},"×")
     ),
+    mentionMatches.length>0&&h("div",{className:"chat-mention-menu"},
+      mentionMatches.map(u=>h("button",{key:u.id,type:"button",className:"chat-mention-opt",onMouseDown:e=>{e.preventDefault();pickMention(u);}},
+        h(Avatar,{userId:u.id,size:"xs"}),
+        h("span",{className:"chat-mention-name"},u.name)
+      ))
+    ),
     recording
       ?h("div",{className:"chat-composer chat-recording"},
           h("button",{type:"button",className:"iconbtn chat-rec-cancel",title:"Abbrechen",onClick:()=>stopRec(false)},h(Icon,{n:"trash",size:17})),
@@ -198,7 +235,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
           h("button",{type:"button",className:"iconbtn chat-attach-btn",title:"Datei anhängen",onClick:()=>fileInputRef.current&&fileInputRef.current.click()},
             h(Icon,{n:"paperclip",size:17})
           ),
-          h("input",{className:"chat-input",placeholder,value:input,onChange:e=>setInput(e.target.value),disabled:sending,autoComplete:"off"}),
+          h("input",{className:"chat-input",ref:composerRef,placeholder,value:input,onChange:e=>setInput(e.target.value),disabled:sending,autoComplete:"off"}),
           (input.trim()||pendingFile)
             ?h("button",{type:"submit",className:"btn btn-primary btn-sm",disabled:sending},
                 sending?h(Icon,{n:"loader",size:15}):h(Icon,{n:"send",size:15}))
@@ -373,6 +410,13 @@ function ChatView(){
     }
   }
 
+  function deriveMentions(text){
+    if(!text)return[];
+    const ids=[];
+    (USERS||[]).forEach(u=>{if(u.id!==ME.id&&u.name&&text.includes("@"+u.name))ids.push(u.id);});
+    return ids;
+  }
+
   async function deliver(text,file){
     let attachmentUrl=null,attachmentName=null;
     if(file){
@@ -386,6 +430,8 @@ function ChatView(){
     if(threadId!==null)body.to=threadId;
     if(attachmentUrl)body.attachment_url=attachmentUrl;
     if(attachmentName)body.attachment_name=attachmentName;
+    const mentions=deriveMentions(text);
+    if(mentions.length)body.mentions=mentions;
     const data=await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
     const m=mapMsg(data.message);
     setThreads(prev=>{const arr=prev[KEY]||[];return arr.some(x=>x.id===m.id)?prev:{...prev,[KEY]:[...arr,m]};});

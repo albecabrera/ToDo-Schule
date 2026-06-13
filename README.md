@@ -21,7 +21,7 @@ offline-fähig, mit System-Benachrichtigungen.
 | **Lehrer-Login** | Anmeldung per **Kürzel** (`ca` für Cabrera, `ve` für Venedey); Erstpasswort = Nachname, danach erzwungener Passwortwechsel |
 | **Begrüßung** | Tageszeitabhängig (Guten Morgen/Tag/Abend); ab 23 Uhr: „Schlafenszeit 🌙 Du brauchst Erholung!" |
 | **Hell/Dunkel** | Toggle in der Topbar (🌙/☀️), folgt der System-Präferenz, wird gespeichert |
-| **PWA** | Installierbar (Manifest), Offline-Cache (App-Shell), schneller Start durch vorkompiliertes Bundle |
+| **PWA** | Installierbar auf Handy/Tablet/Desktop (Manifest + PNG-Icons 192/512/maskable + apple-touch-icon), Offline-Cache (App-Shell), schneller Start durch vorkompiliertes Bundle. API-/WS-Adressen erkennen Umgebung automatisch (`app/config.js`) — derselbe Build läuft lokal **und** auf dem Server. Server-Deployment: siehe `DEPLOY.md` |
 | **Demo-Modus** | „Ohne Login starten" → Mock-Daten, kein Backend nötig |
 
 ---
@@ -83,11 +83,14 @@ ToDo-Schule/
 ├── ToDo-Schule.html      # Produktion: React prod + dist/app.min.js (kein Babel)
 ├── dev.html              # Entwicklung: einzelne JSX-Module + Babel im Browser
 ├── build.sh              # esbuild-Build (./build.sh --watch für Auto-Rebuild)
-├── manifest.webmanifest  # PWA-Manifest (installierbar)
-├── sw.js                 # Service Worker: Offline-Cache + Push
+├── manifest.webmanifest  # PWA-Manifest (PNG-Icons, installierbar)
+├── sw.js                 # Service Worker: Offline-Cache + Push (Cache v7)
+├── DEPLOY.md             # PWA-Checkliste + Server-Setup (nginx, HTTPS, WS-Daemon, .env)
 ├── dist/app.min.js       # kompiliertes Bundle (generiert)
 ├── vendor/               # React 18 production UMD (self-hosted)
+├── assets/icons/         # PWA-Icons (192/512/maskable/apple-touch/favicon, aus SVG generiert)
 ├── app/
+│   ├── config.js         # Runtime-Config: API-/WS-Adressen (lokal vs. Server, ohne Build)
 │   ├── data.js           # Mock-Daten (Demo-Modus) + ESG_API (REST-Client, mapTask/mapNote)
 │   ├── app.jsx           # Root: State, WebSocket, Begrüßung, Passwort-Modal, SW-Registrierung
 │   ├── login.jsx         # Login (Kürzel/E-Mail), Registrierung, Demo-Modus
@@ -126,6 +129,23 @@ ToDo-Schule/
 4. **Offline-Strategie.** App-Shell precached; Assets stale-while-revalidate;
    `/api/`-Requests werden NIE gecacht (Echtzeit-Daten); Navigation
    network-first mit Cache-Fallback.
+
+5. **Umgebungs-Erkennung statt Build-Flags.** `app/config.js` setzt API-/WS-URLs
+   anhand des Hostnamens: lokal → `:8085`/`:8090`, Produktion → gleiche Origin
+   (`/api`, `wss://…/ws` hinter Reverse-Proxy). Ein Build für beide Umgebungen.
+
+---
+
+## PWA & Server-Deployment
+
+Die App ist **als PWA fertig** (Manifest, PNG-Icons, Service Worker,
+Umgebungs-Config). Lokal über `http://localhost:5500` installierbar.
+
+Für den Betrieb unter eigener Domain fehlt nur **Server-Infrastruktur**
+(kein App-Code): HTTPS, nginx-Reverse-Proxy, die zwei PHP-Prozesse, `.env`.
+
+- **Vollständige Anleitung:** `DEPLOY.md` (nginx, Let's Encrypt, systemd, `.env`)
+- **Offene Schritte als Checkliste:** `TODO.md`
 
 ---
 

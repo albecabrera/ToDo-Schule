@@ -229,6 +229,24 @@ final class ChatController
     }
 
     /** Route a chat event to the right WS rooms (DM → both parties, else broadcast). */
+    /** POST /api/chat/:id/pin — Nachricht an-/abpinnen. */
+    public static function pin(Request $req): void
+    {
+        $msg = ChatMessage::find((int) $req->param('id'));
+        if ($msg === null) {
+            throw new HttpException(404, 'Nachricht nicht gefunden.');
+        }
+        $pinned      = ChatMessage::togglePin((int) $msg['id']);
+        $recipientId = $msg['recipient_id'] !== null ? (int) $msg['recipient_id'] : null;
+        self::fanOut(
+            ['id' => (int) $msg['id'], 'pinned' => $pinned],
+            $recipientId,
+            (int) $msg['user_id'],
+            'chat:pinned'
+        );
+        Response::json(['pinned' => $pinned]);
+    }
+
     private static function fanOut(array $payload, ?int $recipientId, int $authorId, string $event): void
     {
         if ($recipientId !== null) {

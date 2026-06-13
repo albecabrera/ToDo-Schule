@@ -19,6 +19,8 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 | **🎤 Mensajes de voz** | `MediaRecorder` (audio/webm) → sube por `/api/chat/upload` → adjunto de audio; reproductor `<audio>` inline. Sin cambios de backend (reutiliza adjuntos). Requiere HTTPS/localhost para el micrófono | `dist/chat.js` (MessagePane: startRec/stopRec, ChatAttachment: isAudioFile) |
 | **@Menciones** | Autocompletar al escribir `@`; al enviar va `mentions:[ids]`; backend emite `chat:mention` (+push) al mencionado aunque no esté en el hilo; resaltado en la burbuja | `ChatController::store`, `dist/chat.js` (renderMentions, pickMention, deriveMentions), WS case `chat:mention` en `app.min.js` |
 | **Responder / citar** | Columna `reply_to_id`; botón "Antworten" → barra de cita sobre el composer → al enviar va `reply_to`; la burbuja muestra el bloque citado (nombre + snippet) | `ChatMessage` (JOIN al padre), `ChatController::store`, `dist/chat.js` (replyTarget, chat-quote/chat-reply-bar) |
+| **Buscar en el chat** | Lupa en el header del hilo → filtra los mensajes del hilo (cliente) y resalta coincidencias | `dist/chat.js` (highlightText, query) |
+| **Fijar mensajes** | Columna `pinned`; acción 📌 al hover → `POST /api/chat/:id/pin` (toggle) → WS `chat:pinned`; barra de fijados arriba del hilo | `ChatMessage::togglePin`, `ChatController::pin`, `dist/chat.js` (chat-pinned-bar) |
 
 **Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
 `chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
@@ -36,9 +38,8 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 
 ### 2. Otros refinamientos
 - Read receipts en grupo (quién leyó) — complejo, opcional.
-- Indicador "en línea / visto por última vez" en el header del DM (ya hay presencia).
-- Buscar dentro del chat.
-- Fijar/anclar mensajes importantes.
+- Indicador "visto por última vez" en el header del DM (ya hay presencia online/away).
+- Búsqueda global (todos los hilos a la vez, server-side) — la actual es por hilo.
 
 ---
 

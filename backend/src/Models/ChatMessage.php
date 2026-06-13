@@ -91,6 +91,16 @@ final class ChatMessage extends Model
             ->execute([':id' => $id]);
     }
 
+    /** Pin an-/abschalten. @return bool neuer Zustand (true = angepinnt) */
+    public static function togglePin(int $id): bool
+    {
+        $cur = (int) (self::db()->query('SELECT pinned FROM chat_messages WHERE id = ' . $id)->fetchColumn() ?: 0);
+        $new = $cur ? 0 : 1;
+        self::db()->prepare('UPDATE chat_messages SET pinned = :p WHERE id = :id')
+            ->execute([':p' => $new, ':id' => $id]);
+        return (bool) $new;
+    }
+
     /* ── Reaktionen ─────────────────────────────────────────────────────── */
 
     /** Reaktion an-/abschalten. @return 'added'|'removed' */

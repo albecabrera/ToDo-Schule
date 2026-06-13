@@ -7,7 +7,21 @@ const{useState:S,useEffect:v,useRef:T,Fragment:FR}=React,h=React.createElement;
 
 const QUICK_EMOJIS=["👍","❤️","✅","😂","🎉","👏"];
 
-function mapMsg(m){return{id:Number(m.id),userId:Number(m.user_id||m.userId),recipientId:m.recipient_id!=null?Number(m.recipient_id):null,userName:m.user_name||m.userName||"",content:m.content||"",attachmentUrl:m.attachment_url||null,attachmentName:m.attachment_name||null,ts:m.created_at||m.ts,reactions:(m.reactions||[]).map(r=>({emoji:r.emoji,userId:Number(r.user_id||r.userId),userName:r.user_name||r.userName||""})),replyTo:(m.reply_to_id||m.replyTo)?{id:Number(m.reply_to_id||(m.replyTo&&m.replyTo.id)),userName:m.reply_user_name||(m.replyTo&&m.replyTo.userName)||"",content:m.reply_content||(m.replyTo&&m.replyTo.content)||"",attachmentName:m.reply_attachment_name||(m.replyTo&&m.replyTo.attachmentName)||null}:null};}
+function mapMsg(m){return{id:Number(m.id),userId:Number(m.user_id||m.userId),recipientId:m.recipient_id!=null?Number(m.recipient_id):null,userName:m.user_name||m.userName||"",content:m.content||"",attachmentUrl:m.attachment_url||null,attachmentName:m.attachment_name||null,ts:m.created_at||m.ts,reactions:(m.reactions||[]).map(r=>({emoji:r.emoji,userId:Number(r.user_id||r.userId),userName:r.user_name||r.userName||""})),replyTo:(m.reply_to_id||m.replyTo)?{id:Number(m.reply_to_id||(m.replyTo&&m.replyTo.id)),userName:m.reply_user_name||(m.replyTo&&m.replyTo.userName)||"",content:m.reply_content||(m.replyTo&&m.replyTo.content)||"",attachmentName:m.reply_attachment_name||(m.replyTo&&m.replyTo.attachmentName)||null}:null,pinned:!!(m.pinned&&Number(m.pinned))};}
+// Suchtreffer im Text hervorheben.
+function highlightText(content,query){
+  if(!content||!query)return content;
+  const re=new RegExp("("+escapeRe(query)+")","gi");
+  const out=[];let last=0,m,key=0;
+  while((m=re.exec(content))!==null){
+    if(m.index>last)out.push(content.slice(last,m.index));
+    out.push(h("mark",{key:key++,className:"chat-hl"},m[0]));
+    last=m.index+m[0].length;
+    if(re.lastIndex===m.index)re.lastIndex++;
+  }
+  if(last<content.length)out.push(content.slice(last));
+  return out.length?out:content;
+}
 function replyPreview(r){if(!r)return"";return r.content||(r.attachmentName?(isAudioFile(r.attachmentName)?"🎤 Sprachnachricht":"📎 "+r.attachmentName):"");}
 function fmtTime(ts){if(!ts)return"";return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
 function fmtDate(ts){if(!ts)return"";const d=new Date(ts),today=new Date();if(d.toDateString()===today.toDateString())return"Heute";const yest=new Date(today);yest.setDate(yest.getDate()-1);if(d.toDateString()===yest.toDateString())return"Gestern";return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
@@ -77,7 +91,7 @@ function ChatAttachment({url,name,isMe}){
   );
 }
 
-function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice,onReply,replyTarget,onCancelReply}){
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice,onReply,replyTarget,onCancelReply,query,onPin}){
   const bottomRef=T(null);
   const[editingId,setEditingId]=S(null);
   const[editText,setEditText]=S("");
@@ -146,13 +160,27 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
     await onEditMsg(m,t);
     cancelEdit();
   }
-  const groups=groupByDate(messages);
+  const q=(query||"").trim().toLowerCase();
+  const shown=q?messages.filter(m=>(m.content||"").toLowerCase().includes(q)):messages;
+  const pinned=messages.filter(m=>m.pinned);
+  const groups=groupByDate(shown);
   return h(FR,null,
+    pinned.length>0&&!q&&h("div",{className:"chat-pinned-bar"},
+      pinned.slice(-3).map(m=>h("div",{key:m.id,className:"chat-pinned-item"},
+        h(Icon,{n:"pin",size:12}),
+        h("span",{className:"chat-pinned-name"},(m.userId===ME.id?"Du":(m.userName||"?"))+":"),
+        h("span",{className:"chat-pinned-text"},m.content||replyPreview({attachmentName:m.attachmentName})||"Nachricht"),
+        h("button",{className:"chat-pinned-rm",title:"Lösen",onClick:()=>onPin(m)},"×")
+      ))
+    ),
     h("div",{className:"chat-messages"},
       loading&&h("div",{className:"chat-empty"},"Wird geladen…"),
       !loading&&messages.length===0&&h("div",{className:"chat-empty"},
         h("div",{style:{fontSize:36}},threadId===null?"💬":"🤝"),
         h("div",{style:{marginTop:8}},threadId===null?"Noch keine Nachrichten im Kollegium.":"Noch keine Direktnachrichten.")
+      ),
+      !loading&&q&&shown.length===0&&h("div",{className:"chat-empty"},
+        h("div",{style:{fontSize:30}},"🔍"),h("div",{style:{marginTop:8}},"Keine Treffer für „"+query.trim()+"“.")
       ),
       groups.map((g,gi)=>h("div",{key:gi},
         h("div",{className:"chat-date-sep"},h("span",null,g.date)),
@@ -183,7 +211,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                         h("span",{className:"chat-quote-name"},m.replyTo.userName||"?"),
                         h("span",{className:"chat-quote-text"},replyPreview(m.replyTo))
                       ),
-                      m.content&&h("div",{className:"chat-text"},renderMentions(m.content,colleagueNames,ME.name)),
+                      m.content&&h("div",{className:"chat-text"},q?highlightText(m.content,query.trim()):renderMentions(m.content,colleagueNames,ME.name)),
                       m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
                       h("div",{className:"chat-ts"},
                         fmtTime(m.ts),
@@ -193,6 +221,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                 !isEditing&&h("div",{className:"chat-msg-actions"},
                   h("button",{className:"chat-act-btn",title:"Antworten",onClick:()=>onReply(m)},h(Icon,{n:"reply",size:13})),
                   h("button",{className:"chat-act-btn",title:"Reagieren",onClick:()=>setPickerId(pickerId===m.id?null:m.id)},h(Icon,{n:"smile",size:13})),
+                  h("button",{className:"chat-act-btn"+(m.pinned?" on":""),title:m.pinned?"Pin lösen":"Anpinnen",onClick:()=>onPin(m)},h(Icon,{n:"pin",size:13})),
                   isMe&&m.content&&h("button",{className:"chat-act-btn",title:"Bearbeiten",onClick:()=>startEdit(m)},h(Icon,{n:"edit",size:13})),
                   isMe&&h("button",{className:"chat-act-btn",title:"Löschen",onClick:()=>onDeleteMsg(m)},h(Icon,{n:"trash",size:13}))
                 ),
@@ -272,6 +301,8 @@ function ChatView(){
   const[mobilePane,setMobilePane]=S("list");
   const[pendingFile,setPendingFile]=S(null);
   const[replyTarget,setReplyTarget]=S(null);
+  const[searching,setSearching]=S(false);
+  const[query,setQuery]=S("");
   const fileInputRef=T(null);
   const lastTypingSent=T(0);
 
@@ -348,6 +379,12 @@ function ChatView(){
       const reactions=(raw.reactions||[]).map(r=>({emoji:r.emoji,userId:Number(r.user_id||r.userId),userName:r.user_name||r.userName||""}));
       setThreads(prev=>{const next={...prev};for(const k of Object.keys(next))next[k]=next[k].map(x=>x.id===id?{...x,reactions}:x);return next;});
     }
+    function onPinned(e){
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const id=Number(raw.id),pinned=!!raw.pinned;
+      setThreads(prev=>{const next={...prev};for(const k of Object.keys(next))next[k]=next[k].map(x=>x.id===id?{...x,pinned}:x);return next;});
+    }
     function onRead(e){
       const d=e.detail&&(e.detail.message||e.detail);
       if(!d||d.reader==null)return;
@@ -366,6 +403,7 @@ function ChatView(){
     window.addEventListener("esg:chat:updated",onUpdated);
     window.addEventListener("esg:chat:deleted",onDeleted);
     window.addEventListener("esg:chat:reaction",onReaction);
+    window.addEventListener("esg:chat:pinned",onPinned);
     window.addEventListener("esg:chat:read",onRead);
     window.addEventListener("esg:chat:typing",onTyping);
     return()=>{
@@ -373,10 +411,18 @@ function ChatView(){
       window.removeEventListener("esg:chat:updated",onUpdated);
       window.removeEventListener("esg:chat:deleted",onDeleted);
       window.removeEventListener("esg:chat:reaction",onReaction);
+      window.removeEventListener("esg:chat:pinned",onPinned);
       window.removeEventListener("esg:chat:read",onRead);
       window.removeEventListener("esg:chat:typing",onTyping);
     };
   },[threadId,ME.id]);
+
+  async function pinMsg(m){
+    const newState=!m.pinned;
+    setThreads(prev=>{const next={...prev};for(const k of Object.keys(next))next[k]=next[k].map(x=>x.id===m.id?{...x,pinned:newState}:x);return next;});
+    try{await window.ESG_API.fetch("/api/chat/"+m.id+"/pin",{method:"POST",body:JSON.stringify({})});}
+    catch(err){setThreads(prev=>{const next={...prev};for(const k of Object.keys(next))next[k]=next[k].map(x=>x.id===m.id?{...x,pinned:m.pinned}:x);return next;});}
+  }
 
   async function reactMsg(m,emoji){
     // optimistisch: meine Reaktion sofort toggeln
@@ -490,6 +536,7 @@ function ChatView(){
     const k=id===null?"group":String(id);
     setUnread(prev=>({...prev,[k]:0}));
     setReplyTarget(null);
+    setSearching(false);setQuery("");
     setMobilePane("messages");
   }
 
@@ -525,9 +572,13 @@ function ChatView(){
         h("button",{className:"dm-back-btn",onClick:()=>setMobilePane("list")},h(Icon,{n:"arrowLeft",size:16})),
         threadId===null
           ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
-          :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||""))
+          :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||"")),
+        h("div",{className:"grow"}),
+        searching&&h("input",{className:"chat-search-input",autoFocus:true,placeholder:"Suchen…",value:query,onChange:e=>setQuery(e.target.value)}),
+        h("button",{className:"iconbtn chat-search-btn"+(searching?" on":""),title:"In Unterhaltung suchen",onClick:()=>{const n=!searching;setSearching(n);if(!n)setQuery("");}},
+          h(Icon,{n:searching?"x":"search",size:16}))
       ),
-      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null)})
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null),query:searching?query:"",onPin:pinMsg})
     )
   );
 }

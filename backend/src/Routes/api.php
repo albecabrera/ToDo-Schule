@@ -106,6 +106,7 @@ return (static function (): Router {
     $r->post('/api/chat/typing', [ChatController::class, 'typing'],     ['auth' => true]);
     $r->post('/api/chat/read',   [ChatController::class, 'read'],       ['auth' => true]);
     $r->post('/api/chat/:id/react', [ChatController::class, 'react'],   ['auth' => true]);
+    $r->post('/api/chat/:id/pin',   [ChatController::class, 'pin'],     ['auth' => true]);
 
     // --- Web-Push ------------------------------------------------------------
     $r->get('/api/push/public-key',  [PushController::class, 'publicKey'],   ['auth' => true]);

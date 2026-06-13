@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Lib;
 
 use App\Config\Database;
+use App\Models\PushSubscription;
 
 /**
  * Emitter
@@ -26,6 +27,9 @@ final class Emitter
      * @param string $event   z. B. 'task:created'
      * @param array  $payload beliebige JSON-Nutzdaten
      */
+    /** Events, die einen Web-Push an einen einzelnen Nutzer auslösen. */
+    private const PUSH_EVENTS = ['user:assigned', 'comment:added', 'chat:message', 'note:created'];
+
     public static function emit(string $channel, string $event, array $payload): void
     {
         $pdo = Database::connection();
@@ -37,6 +41,33 @@ final class Emitter
             ':e' => $event,
             ':p' => json_encode($payload, JSON_UNESCAPED_UNICODE),
         ]);
+
+        self::maybePush($channel, $event);
+    }
+
+    /**
+     * Best-effort Web-Push an einen einzelnen Nutzer (nur user:<id>-Channels).
+     * Fehler werden bewusst verschluckt — Push darf den REST-Request nie stören.
+     */
+    private static function maybePush(string $channel, string $event): void
+    {
+        if (!str_starts_with($channel, 'user:') || !in_array($event, self::PUSH_EVENTS, true)) {
+            return;
+        }
+        if (!WebPush::isConfigured()) {
+            return;
+        }
+        try {
+            $userId = (int) substr($channel, 5);
+            foreach (PushSubscription::forUser($userId) as $sub) {
+                $status = WebPush::send($sub['endpoint']);
+                if ($status === 404 || $status === 410) {
+                    PushSubscription::deleteByEndpoint($sub['endpoint']);
+                }
+            }
+        } catch (\Throwable) {
+            // ignorieren
+        }
     }
 
     /** Sendet dasselbe Event an mehrere Channels (dedupliziert). */

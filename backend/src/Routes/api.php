@@ -9,6 +9,7 @@ use App\Controllers\AuditController;
 use App\Controllers\AuthController;
 use App\Controllers\AvatarController;
 use App\Controllers\ChatController;
+use App\Controllers\PushController;
 use App\Controllers\CommentController;
 use App\Controllers\NotificationController;
 use App\Controllers\NoteController;
@@ -102,6 +103,11 @@ return (static function (): Router {
     $r->post('/api/chat/upload', [ChatController::class, 'uploadFile'], ['auth' => true]);
     $r->patch('/api/chat/:id',   [ChatController::class, 'update'],     ['auth' => true]);
     $r->delete('/api/chat/:id',  [ChatController::class, 'destroy'],    ['auth' => true]);
+
+    // --- Web-Push ------------------------------------------------------------
+    $r->get('/api/push/public-key',  [PushController::class, 'publicKey'],   ['auth' => true]);
+    $r->post('/api/push/subscribe',  [PushController::class, 'subscribe'],   ['auth' => true]);
+    $r->post('/api/push/unsubscribe',[PushController::class, 'unsubscribe'], ['auth' => true]);
 
     return $r;
 })();

@@ -6,6 +6,7 @@
 
 # Laufzeit
 /storage/ratelimit/
+/storage/vapid.json
 *.log
 database.sqlite
 database.sqlite-wal

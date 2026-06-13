@@ -2,7 +2,7 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v7";
+const CACHE = "esg-todo-v8";
 
 const PRECACHE = [
   "./",
@@ -118,10 +118,11 @@ self.addEventListener("push", (event) => {
   }
   event.waitUntil(
     self.registration.showNotification(data.title || "ToDo-Schule", {
-      body: data.body || "",
-      icon: "assets/esg-mark.svg",
-      badge: "assets/esg-mark.svg",
-      tag: data.taskId ? `task-${data.taskId}` : undefined,
+      // Ohne Payload (VAPID-Anstoß) zeigen wir eine generische Meldung.
+      body: data.body || "Du hast neue Aktivität in ToDo-Schule.",
+      icon: "assets/icons/icon-192.png",
+      badge: "assets/icons/icon-192.png",
+      tag: data.taskId ? `task-${data.taskId}` : "esg-activity",
       data: { taskId: data.taskId || null },
     })
   );

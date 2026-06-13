@@ -139,6 +139,13 @@ function Sidebar({
   const dragSrc  = useRef(null);
   const [dragOver, setDragOver] = useState(null);
 
+  // Open profile modal when topbar avatar is clicked (CustomEvent bridge)
+  useEffect(()=>{
+    function onOpenProfile(){ setProfileOpen(true); }
+    window.addEventListener("esg:openProfile", onOpenProfile);
+    return ()=>window.removeEventListener("esg:openProfile", onOpenProfile);
+  },[]);
+
   // Close popup on Escape
   useEffect(()=>{
     if(!openMenu) return;
@@ -307,7 +314,7 @@ function Sidebar({
         onClick:()=>{ setSection("chat"); onClose(); }
       },
         h(Icon,{n:"messageCircle",size:17}),
-        h("span",{className:"grow"},"Kollegiumschat")
+        h("span",{className:"grow"},"Chat")
       ),
 
       /* Bereiche header */
@@ -436,12 +443,16 @@ function Sidebar({
 
 /* ── Topbar ──────────────────────────────────────────────────────────── */
 function Topbar({activeTeam, section, view, setView, notifCount, onBell, onMenuOpen, searchVal, setSearchVal, presenceUsers, theme, onToggleTheme, onQuickNote}){
-  const isNotes = section === "notes";
+  const isChat  = section === "chat";
+  // Chat & Notes both hide the task view-toggle and use their own title
+  const isNotes = section === "notes" || isChat;
   const team = !isNotes && typeof activeTeam === "number"
     ? TEAMS.find(t=>t.id===activeTeam)
     : null;
 
-  const crumb = isNotes
+  const crumb = isChat
+    ? "Chat"
+    : section === "notes"
     ? "Notizen & Planungen"
     : team ? [team.name] : {all:"Alle Aufgaben",mine:"Mir zugewiesen",today:"Heute fällig",done:"Erledigt"}[activeTeam];
 
@@ -486,8 +497,8 @@ function Topbar({activeTeam, section, view, setView, notifCount, onBell, onMenuO
         h("button",{className:view==="calendar"?"on":"",onClick:()=>setView("calendar"),title:"Kalender"},
           h(Icon,{n:"calendar",size:15}), "Kalender"
         ),
-        h("button",{className:view==="kiosk"?"on":"",onClick:()=>setView("kiosk"),title:"Kiosk-Anzeige"},
-          h(Icon,{n:"monitor",size:15}), "Kiosk"
+        h("button",{className:view==="kiosk"?"on":"",onClick:()=>setView("kiosk"),title:"Vollbild-Ansicht"},
+          h(Icon,{n:"monitor",size:15}), "Vollbild"
         )
       ),
 
@@ -503,7 +514,8 @@ function Topbar({activeTeam, section, view, setView, notifCount, onBell, onMenuO
         )
       ),
 
-      h(Avatar,{userId:ME.id,size:"sm",showPresence:true,style:{cursor:"pointer"}})
+      h(Avatar,{userId:ME.id,size:"sm",showPresence:true,style:{cursor:"pointer"},
+        onClick:()=>window.dispatchEvent(new CustomEvent("esg:openProfile"))})
     )
   );
 }

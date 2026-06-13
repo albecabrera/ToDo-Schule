@@ -77,15 +77,62 @@ final class ChatController
         $recipientId = isset($data['to']) && $data['to'] !== null ? (int) $data['to'] : null;
         $message     = ChatMessage::create($req->userId(), $content, $recipientId, $attachmentUrl, $attachmentName);
 
-        if ($recipientId !== null) {
-            // DM: push to both parties' personal rooms
-            Emitter::emit('user:' . $req->userId(), 'chat:message', ['message' => $message]);
-            Emitter::emit('user:' . $recipientId,   'chat:message', ['message' => $message]);
-        } else {
-            // Kollegiumschat: broadcast to everyone
-            Emitter::emit('broadcast', 'chat:message', ['message' => $message]);
-        }
+        self::fanOut($message, $recipientId, $req->userId(), 'chat:message');
 
         Response::json(['message' => $message], 201);
+    }
+
+    /** PUT /api/chat/:id  body: { content } — only the author may edit */
+    public static function update(Request $req): void
+    {
+        $msg = ChatMessage::find((int) $req->param('id'));
+        if ($msg === null) {
+            throw new HttpException(404, 'Nachricht nicht gefunden.');
+        }
+        if ((int) $msg['user_id'] !== $req->userId()) {
+            throw new HttpException(403, 'Nur eigene Nachrichten dürfen bearbeitet werden.');
+        }
+
+        $data    = Validator::make($req->body, ['content' => 'required|string|max:2000']);
+        $content = trim($data['content']);
+        if ($content === '') {
+            throw new HttpException(422, 'Nachricht darf nicht leer sein.');
+        }
+
+        $message     = ChatMessage::updateContent((int) $msg['id'], $content);
+        $recipientId = $msg['recipient_id'] !== null ? (int) $msg['recipient_id'] : null;
+        self::fanOut($message, $recipientId, (int) $msg['user_id'], 'chat:updated');
+
+        Response::json(['message' => $message]);
+    }
+
+    /** DELETE /api/chat/:id — only the author may delete */
+    public static function destroy(Request $req): void
+    {
+        $msg = ChatMessage::find((int) $req->param('id'));
+        if ($msg === null) {
+            throw new HttpException(404, 'Nachricht nicht gefunden.');
+        }
+        if ((int) $msg['user_id'] !== $req->userId()) {
+            throw new HttpException(403, 'Nur eigene Nachrichten dürfen gelöscht werden.');
+        }
+
+        ChatMessage::remove((int) $msg['id']);
+        $recipientId = $msg['recipient_id'] !== null ? (int) $msg['recipient_id'] : null;
+        $payload     = ['id' => (int) $msg['id'], 'recipient_id' => $recipientId];
+        self::fanOut($payload, $recipientId, (int) $msg['user_id'], 'chat:deleted');
+
+        Response::noContent();
+    }
+
+    /** Route a chat event to the right WS rooms (DM → both parties, else broadcast). */
+    private static function fanOut(array $payload, ?int $recipientId, int $authorId, string $event): void
+    {
+        if ($recipientId !== null) {
+            Emitter::emit('user:' . $authorId,    $event, ['message' => $payload]);
+            Emitter::emit('user:' . $recipientId, $event, ['message' => $payload]);
+        } else {
+            Emitter::emit('broadcast', $event, ['message' => $payload]);
+        }
     }
 }

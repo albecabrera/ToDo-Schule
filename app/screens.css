@@ -103,7 +103,7 @@
 .userchip .cog{margin-left:auto;color:var(--text-3)}
 
 /* ------------------------------- TOPBAR ---------------------------------- */
-.main{display:flex;flex-direction:column;min-width:0;height:100%}
+.main{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;height:100%}
 .topbar{
   display:flex;align-items:center;gap:14px;padding:0 22px;height:66px;flex:none;
   background:color-mix(in srgb, var(--surface) 82%, transparent);backdrop-filter:saturate(1.4) blur(10px);

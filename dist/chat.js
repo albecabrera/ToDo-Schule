@@ -46,9 +46,19 @@ function ChatAttachment({url,name,isMe}){
   );
 }
 
-function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef}){
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg}){
   const bottomRef=T(null);
+  const[editingId,setEditingId]=S(null);
+  const[editText,setEditText]=S("");
   v(()=>{if(bottomRef.current)bottomRef.current.scrollIntoView({behavior:"smooth"});},[messages]);
+  function startEdit(m){setEditingId(m.id);setEditText(m.content||"");}
+  function cancelEdit(){setEditingId(null);setEditText("");}
+  async function saveEdit(m){
+    const t=editText.trim();
+    if(!t||t===m.content){cancelEdit();return;}
+    await onEditMsg(m,t);
+    cancelEdit();
+  }
   const groups=groupByDate(messages);
   return h(FR,null,
     h("div",{className:"chat-messages"},
@@ -63,13 +73,30 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
           const isMe=m.userId===ME.id;
           const sender=isMe?ME:(USERS&&USERS.find(u=>u.id===m.userId));
           const displayName=isMe?(ME.name||"Ich"):(m.userName||sender?.initials||"?");
+          const isEditing=editingId===m.id;
           return h("div",{key:m.id,className:"chat-msg"+(isMe?" me":"")},
             !isMe&&h(Avatar,{userId:m.userId,size:"xs"}),
             h("div",{className:"chat-bubble-wrap"},
               h("div",{className:"chat-bubble"},
-                m.content&&h("div",{className:"chat-text"},m.content),
-                m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
-                h("div",{className:"chat-ts"},fmtTime(m.ts))
+                isEditing
+                  ?h("div",{className:"chat-edit-box"},
+                      h("textarea",{className:"chat-edit-input",value:editText,autoFocus:true,rows:1,
+                        onChange:e=>setEditText(e.target.value),
+                        onKeyDown:e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();saveEdit(m);}else if(e.key==="Escape"){cancelEdit();}}}),
+                      h("div",{className:"chat-edit-actions"},
+                        h("button",{className:"btn btn-ghost btn-sm",type:"button",onClick:cancelEdit},"Abbrechen"),
+                        h("button",{className:"btn btn-primary btn-sm",type:"button",onClick:()=>saveEdit(m)},"Speichern")
+                      )
+                    )
+                  :h(FR,null,
+                      m.content&&h("div",{className:"chat-text"},m.content),
+                      m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
+                      h("div",{className:"chat-ts"},fmtTime(m.ts))
+                    ),
+                isMe&&!isEditing&&h("div",{className:"chat-msg-actions"},
+                  m.content&&h("button",{className:"chat-act-btn",title:"Bearbeiten",onClick:()=>startEdit(m)},h(Icon,{n:"edit",size:13})),
+                  h("button",{className:"chat-act-btn",title:"Löschen",onClick:()=>onDeleteMsg(m)},h(Icon,{n:"trash",size:13}))
+                )
               ),
               h("div",{className:"chat-sender-name"+(isMe?" me":"")},displayName)
             )
@@ -141,9 +168,51 @@ function ChatView(){
         setUnread(prev=>({...prev,[mKey]:(prev[mKey]||0)+1}));
       }
     }
+    function keyFor(m){return m.recipientId===null?"group":(m.userId===ME.id?String(m.recipientId):String(m.userId));}
+    function onUpdated(e){
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const m=mapMsg(raw);const mKey=keyFor(m);
+      setThreads(prev=>{const arr=prev[mKey]||[];return{...prev,[mKey]:arr.map(x=>x.id===m.id?m:x)};});
+    }
+    function onDeleted(e){
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const rid=raw.recipient_id!=null?Number(raw.recipient_id):null;
+      const id=Number(raw.id);
+      setThreads(prev=>{
+        const next={...prev};
+        for(const k of Object.keys(next)){next[k]=next[k].filter(x=>x.id!==id);}
+        return next;
+      });
+    }
     window.addEventListener("esg:chat",onChat);
-    return()=>window.removeEventListener("esg:chat",onChat);
+    window.addEventListener("esg:chat:updated",onUpdated);
+    window.addEventListener("esg:chat:deleted",onDeleted);
+    return()=>{window.removeEventListener("esg:chat",onChat);window.removeEventListener("esg:chat:updated",onUpdated);window.removeEventListener("esg:chat:deleted",onDeleted);};
   },[threadId,ME.id]);
+
+  async function editMsg(m,text){
+    const prevContent=m.content;
+    setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.map(x=>x.id===m.id?{...x,content:text}:x)};});
+    try{
+      await window.ESG_API.fetch("/api/chat/"+m.id,{method:"PATCH",body:JSON.stringify({content:text})});
+    }catch(err){
+      setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.map(x=>x.id===m.id?{...x,content:prevContent}:x)};});
+      window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht bearbeitet werden."});
+    }
+  }
+  async function deleteMsg(m){
+    if(!window.confirm("Diese Nachricht löschen?"))return;
+    const arrBefore=threads[KEY]||[];
+    setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.filter(x=>x.id!==m.id)};});
+    try{
+      await window.ESG_API.fetch("/api/chat/"+m.id,{method:"DELETE"});
+    }catch(err){
+      setThreads(prev=>({...prev,[KEY]:arrBefore}));
+      window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gelöscht werden."});
+    }
+  }
 
   async function send(e){
     e.preventDefault();
@@ -227,7 +296,7 @@ function ChatView(){
           ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
           :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||""))
       ),
-      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef})
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg})
     )
   );
 }

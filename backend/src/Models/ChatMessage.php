@@ -71,4 +71,30 @@ final class ChatMessage extends Model
         $stmt->execute([':id' => $id]);
         return $stmt->fetch();
     }
+
+    public static function find(int $id): ?array
+    {
+        $stmt = self::db()->prepare(
+            'SELECT m.*, u.name AS user_name
+             FROM chat_messages m
+             LEFT JOIN users u ON u.id = m.user_id
+             WHERE m.id = :id'
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function updateContent(int $id, string $content): array
+    {
+        self::db()->prepare('UPDATE chat_messages SET content = :c WHERE id = :id')
+            ->execute([':c' => $content, ':id' => $id]);
+        return self::find($id);
+    }
+
+    public static function remove(int $id): void
+    {
+        self::db()->prepare('DELETE FROM chat_messages WHERE id = :id')
+            ->execute([':id' => $id]);
+    }
 }

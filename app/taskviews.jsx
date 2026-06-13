@@ -229,17 +229,25 @@ function BoardView({tasks, onOpen, onNewTask, onMoveTask}){
   );
 }
 
-/* ── Kiosk View (Tagesansicht für Klassenzimmer) ─────────────────────── */
+/* ── Vollbild View (Tagesansicht für Klassenzimmer) ──────────────────── */
 function KioskView({tasks, onToggleDone}){
   const urgent  = tasks.filter(t=>t.status!=="done"&&(t.due===TODAY||t.status==="in_progress"));
   const pending = tasks.filter(t=>t.status==="todo"&&t.due!==TODAY);
   const done    = tasks.filter(t=>t.status==="done");
 
+  // Clicking a card shows it fullscreen; ESC or click-outside closes it.
+  const [focused, setFocused] = React.useState(null);
+  React.useEffect(()=>{
+    function onKey(e){ if(e.key==="Escape") setFocused(null); }
+    window.addEventListener("keydown",onKey);
+    return ()=>window.removeEventListener("keydown",onKey);
+  },[]);
+
   function KioskCard({task}){
     const team = TEAMS.find(t=>t.id===task.teamId);
     return h("div",{
       className:`kiosk-card ${task.status==="in_progress"?"active":""}`,
-      onClick:()=>onToggleDone(task.id),
+      onClick:()=>setFocused(task),
     },
       h("div",{className:"kiosk-card-bar",style:{background:team?.color||"var(--accent)"}}),
       h("div",{className:"kiosk-card-body"},
@@ -256,6 +264,12 @@ function KioskView({tasks, onToggleDone}){
   }
 
   return h("div",{className:"kiosk"},
+    focused && h("div",{className:"kiosk-focus-overlay",onClick:()=>setFocused(null)},
+      h("div",{className:"kiosk-focus-inner",onClick:e=>e.stopPropagation()},
+        h("div",{className:"kiosk-focus-title"},focused.title),
+        focused.due && h("div",{className:"kiosk-focus-meta"},shortDate(focused.due))
+      )
+    ),
     h("div",{className:"kiosk-header"},
       h("div",{className:"kiosk-date"},
         new Date().toLocaleDateString("de-DE",{weekday:"long",year:"numeric",month:"long",day:"numeric"})

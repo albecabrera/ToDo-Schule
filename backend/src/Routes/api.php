@@ -99,6 +99,8 @@ return (static function (): Router {
     $r->get('/api/chat',         [ChatController::class, 'index'],      ['auth' => true]);
     $r->post('/api/chat',        [ChatController::class, 'store'],      ['auth' => true]);
     $r->post('/api/chat/upload', [ChatController::class, 'uploadFile'], ['auth' => true]);
+    $r->patch('/api/chat/:id',   [ChatController::class, 'update'],     ['auth' => true]);
+    $r->delete('/api/chat/:id',  [ChatController::class, 'destroy'],    ['auth' => true]);
 
     return $r;
 })();

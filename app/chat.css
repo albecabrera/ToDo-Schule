@@ -1,10 +1,17 @@
 /* ── Kollegiumschat + Direktnachrichten ───────────────────────────────── */
 
 /* ── Two-panel layout ─────────────────────────────────────────────────── */
+/* Chat fills the content area edge-to-edge and never relies on 100vh math
+   (which is unreliable on mobile browsers with a collapsing URL bar). */
+.content-pad:has(.chat-layout) {
+  padding: 0;
+  max-width: none;
+  height: 100%;
+}
 .chat-layout {
   display: flex;
-  height: calc(100vh - 66px);
-  max-height: 900px;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: var(--bg);
 }
@@ -332,11 +339,63 @@
 .chat-att-label { font-size: 11px; opacity: .65; margin-top: 1px; }
 .chat-att-dl { font-size: 16px; font-weight: 700; flex: none; opacity: .7; }
 
+/* ── Message hover actions (edit / delete own messages) ───────────────── */
+.chat-bubble { position: relative; }
+.chat-msg-actions {
+  position: absolute;
+  top: -10px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--sh-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+  z-index: 2;
+}
+.chat-msg.me .chat-msg-actions { left: -6px; }
+.chat-msg:not(.me) .chat-msg-actions { right: -6px; }
+.chat-msg:hover .chat-msg-actions { opacity: 1; pointer-events: auto; }
+.chat-act-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.chat-act-btn:hover { background: var(--surface-2); color: var(--accent); }
+.chat-act-btn[title="Löschen"]:hover { color: var(--coral, #ef4444); }
+
+/* ── Inline edit box ──────────────────────────────────────────────────── */
+.chat-edit-box { display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+.chat-edit-input {
+  width: 100%;
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  line-height: 1.4;
+}
+.chat-msg.me .chat-edit-input { color: var(--text); }
+.chat-edit-actions { display: flex; justify-content: flex-end; gap: 6px; }
+
 /* ── Mobile: single-panel switching ──────────────────────────────────── */
 @media (max-width: 700px) {
   .dm-list   { width: 100%; border-right: none; }
   .dm-pane   { width: 100%; }
   .mobile-hidden { display: none; }
   .dm-back-btn { display: flex; }
-  .chat-layout { max-height: calc(100vh - 56px); }
 }

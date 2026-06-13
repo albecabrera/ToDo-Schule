@@ -1,269 +1,306 @@
-// ========================================================================
-//  ToDo-Schule — Chat (Chat + Direktnachrichten)
-// ========================================================================
+// app/chat.jsx — ToDo-Schule Chat (Kollegium + Direktnachrichten, Datei-Upload, Edit/Delete)
+// NOTE: dist/chat.js is the hand-maintained runtime; keep both in sync.
 (function(){
-const {useState, useEffect, useRef} = React;
-const {createElement:h, Fragment} = React;
+"use strict";
+const{useState:S,useEffect:v,useRef:T,Fragment:FR}=React,h=React.createElement;
 
-/* ── helpers ─────────────────────────────────────────────────────────── */
-function mapMsg(m){
-  return {
-    id:          Number(m.id),
-    userId:      Number(m.user_id || m.userId),
-    recipientId: m.recipient_id != null ? Number(m.recipient_id) : null,
-    userName:    m.user_name || m.userName || "",
-    content:     m.content,
-    ts:          m.created_at || m.ts,
-  };
+function mapMsg(m){return{id:Number(m.id),userId:Number(m.user_id||m.userId),recipientId:m.recipient_id!=null?Number(m.recipient_id):null,userName:m.user_name||m.userName||"",content:m.content||"",attachmentUrl:m.attachment_url||null,attachmentName:m.attachment_name||null,ts:m.created_at||m.ts};}
+function fmtTime(ts){if(!ts)return"";return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
+function fmtDate(ts){if(!ts)return"";const d=new Date(ts),today=new Date();if(d.toDateString()===today.toDateString())return"Heute";const yest=new Date(today);yest.setDate(yest.getDate()-1);if(d.toDateString()===yest.toDateString())return"Gestern";return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function groupByDate(msgs){const groups=[];let curDate=null;msgs.forEach(m=>{const d=new Date(m.ts).toDateString();if(d!==curDate){groups.push({date:fmtDate(m.ts),messages:[m]});curDate=d;}else groups[groups.length-1].messages.push(m);});return groups;}
+
+function fileIcon(name){
+  if(!name)return"📄";
+  const ext=(name.split(".").pop()||"").toLowerCase();
+  if(["pdf"].includes(ext))return"📕";
+  if(["doc","docx"].includes(ext))return"📝";
+  if(["xls","xlsx","csv"].includes(ext))return"📊";
+  if(["ppt","pptx"].includes(ext))return"📑";
+  if(["zip","rar","7z"].includes(ext))return"🗜️";
+  if(["jpg","jpeg","png","gif","webp","svg"].includes(ext))return"🖼️";
+  if(["mp4","mov","avi","mkv"].includes(ext))return"🎬";
+  if(["mp3","m4a","wav"].includes(ext))return"🎵";
+  return"📄";
 }
 
-function fmtTime(ts){
-  if(!ts) return "";
-  return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
-}
-
-function fmtDate(ts){
-  if(!ts) return "";
-  const d = new Date(ts), today = new Date();
-  if(d.toDateString()===today.toDateString()) return "Heute";
-  const yest = new Date(today); yest.setDate(yest.getDate()-1);
-  if(d.toDateString()===yest.toDateString()) return "Gestern";
-  return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
-}
-
-function groupByDate(msgs){
-  const groups = [];
-  let curDate = null;
-  msgs.forEach(m=>{
-    const d = new Date(m.ts).toDateString();
-    if(d!==curDate){ groups.push({date:fmtDate(m.ts), messages:[m]}); curDate=d; }
-    else groups[groups.length-1].messages.push(m);
-  });
-  return groups;
-}
-
-/* ── Thread list item ─────────────────────────────────────────────────── */
-function ThreadItem({label, sub, avatarEl, active, unread, onClick}){
-  return h("button",{
-    className:`dm-thread ${active?"active":""}`,
-    onClick,
-  },
+function ThreadItem({label,sub,avatarEl,active,unread,onClick}){
+  return h("button",{className:"dm-thread"+(active?" active":""),onClick},
     avatarEl,
     h("div",{className:"dm-thread-body"},
       h("div",{className:"dm-thread-name"},label),
-      sub && h("div",{className:"dm-thread-sub"},sub)
+      sub&&h("div",{className:"dm-thread-sub"},sub)
     ),
-    unread > 0 && h("span",{className:"dm-badge"},unread > 9 ? "9+" : unread)
+    unread>0&&h("span",{className:"dm-badge"},unread>9?"9+":unread)
   );
 }
 
-/* ── Message area ─────────────────────────────────────────────────────── */
-function MessagePane({ME, threadId, messages, loading, sending, input, setInput, onSend, placeholder}){
-  const bottomRef = useRef(null);
+function ChatAttachment({url,name,isMe}){
+  const API=(window.ESG_API&&window.ESG_API.baseUrl&&window.ESG_API.baseUrl())||window.ESG_API_BASE||"http://127.0.0.1:8085";
+  const fullUrl=API+url;
+  return h("a",{className:"chat-attachment"+(isMe?" me":""),href:fullUrl,target:"_blank",rel:"noopener noreferrer",download:name||true},
+    h("span",{className:"chat-att-icon"},fileIcon(name)),
+    h("div",{className:"chat-att-body"},
+      h("div",{className:"chat-att-name"},name||"Datei"),
+      h("div",{className:"chat-att-label"},"Herunterladen")
+    ),
+    h("span",{className:"chat-att-dl"},"↓")
+  );
+}
 
-  useEffect(()=>{
-    if(bottomRef.current) bottomRef.current.scrollIntoView({behavior:"smooth"});
-  },[messages]);
-
-  const groups = groupByDate(messages);
-
-  return h(Fragment,null,
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg}){
+  const bottomRef=T(null);
+  const[editingId,setEditingId]=S(null);
+  const[editText,setEditText]=S("");
+  v(()=>{if(bottomRef.current)bottomRef.current.scrollIntoView({behavior:"smooth"});},[messages]);
+  function startEdit(m){setEditingId(m.id);setEditText(m.content||"");}
+  function cancelEdit(){setEditingId(null);setEditText("");}
+  async function saveEdit(m){
+    const t=editText.trim();
+    if(!t||t===m.content){cancelEdit();return;}
+    await onEditMsg(m,t);
+    cancelEdit();
+  }
+  const groups=groupByDate(messages);
+  return h(FR,null,
     h("div",{className:"chat-messages"},
-      loading && h("div",{className:"chat-empty"},"Wird geladen…"),
-      !loading && messages.length===0 && h("div",{className:"chat-empty"},
-        h("div",{style:{fontSize:36}},threadId===null ? "💬" : "🤝"),
-        h("div",{style:{marginTop:8}}, threadId===null
-          ? "Noch keine Nachrichten im Kollegium."
-          : "Noch keine Direktnachrichten."
-        )
+      loading&&h("div",{className:"chat-empty"},"Wird geladen…"),
+      !loading&&messages.length===0&&h("div",{className:"chat-empty"},
+        h("div",{style:{fontSize:36}},threadId===null?"💬":"🤝"),
+        h("div",{style:{marginTop:8}},threadId===null?"Noch keine Nachrichten im Kollegium.":"Noch keine Direktnachrichten.")
       ),
       groups.map((g,gi)=>h("div",{key:gi},
         h("div",{className:"chat-date-sep"},h("span",null,g.date)),
         g.messages.map(m=>{
-          const isMe = m.userId === ME.id;
-          const sender = isMe ? ME : (USERS.find(u=>u.id===m.userId));
-          const displayName = isMe ? (ME.name||"Ich") : (m.userName || sender?.initials || "?");
-          return h("div",{key:m.id, className:`chat-msg ${isMe?"me":""}`},
-            !isMe && h(Avatar,{userId:m.userId, size:"xs"}),
+          const isMe=m.userId===ME.id;
+          const sender=isMe?ME:(USERS&&USERS.find(u=>u.id===m.userId));
+          const displayName=isMe?(ME.name||"Ich"):(m.userName||sender?.initials||"?");
+          const isEditing=editingId===m.id;
+          return h("div",{key:m.id,className:"chat-msg"+(isMe?" me":"")},
+            !isMe&&h(Avatar,{userId:m.userId,size:"xs"}),
             h("div",{className:"chat-bubble-wrap"},
               h("div",{className:"chat-bubble"},
-                h("div",{className:"chat-text"},m.content),
-                h("div",{className:"chat-ts"},fmtTime(m.ts))
+                isEditing
+                  ?h("div",{className:"chat-edit-box"},
+                      h("textarea",{className:"chat-edit-input",value:editText,autoFocus:true,rows:1,
+                        onChange:e=>setEditText(e.target.value),
+                        onKeyDown:e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();saveEdit(m);}else if(e.key==="Escape"){cancelEdit();}}}),
+                      h("div",{className:"chat-edit-actions"},
+                        h("button",{className:"btn btn-ghost btn-sm",type:"button",onClick:cancelEdit},"Abbrechen"),
+                        h("button",{className:"btn btn-primary btn-sm",type:"button",onClick:()=>saveEdit(m)},"Speichern")
+                      )
+                    )
+                  :h(FR,null,
+                      m.content&&h("div",{className:"chat-text"},m.content),
+                      m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
+                      h("div",{className:"chat-ts"},fmtTime(m.ts))
+                    ),
+                isMe&&!isEditing&&h("div",{className:"chat-msg-actions"},
+                  m.content&&h("button",{className:"chat-act-btn",title:"Bearbeiten",onClick:()=>startEdit(m)},h(Icon,{n:"edit",size:13})),
+                  h("button",{className:"chat-act-btn",title:"Löschen",onClick:()=>onDeleteMsg(m)},h(Icon,{n:"trash",size:13}))
+                )
               ),
-              h("div",{className:`chat-sender-name ${isMe?"me":""}`},displayName)
+              h("div",{className:"chat-sender-name"+(isMe?" me":"")},displayName)
             )
           );
         })
       )),
       h("div",{ref:bottomRef})
     ),
+    pendingFile&&h("div",{className:"chat-pending-file"},
+      h("span",{className:"chat-att-icon"},fileIcon(pendingFile.name)),
+      h("span",{className:"chat-pending-name"},pendingFile.name),
+      h("button",{className:"chat-pending-rm",onClick:onClearFile,title:"Entfernen"},"×")
+    ),
     h("form",{className:"chat-composer",onSubmit:onSend},
-      h("input",{
-        className:"chat-input",
-        placeholder,
-        value:input,
-        onChange:e=>setInput(e.target.value),
-        disabled:sending,
-        autoComplete:"off",
-      }),
-      h("button",{type:"submit",className:"btn btn-primary btn-sm",disabled:!input.trim()||sending},
-        sending ? h(Icon,{n:"loader",size:15}) : h(Icon,{n:"send",size:15})
+      h("input",{type:"file",ref:fileInputRef,style:{display:"none"},onChange:onFileSelect}),
+      h("button",{type:"button",className:"iconbtn chat-attach-btn",title:"Datei anhängen",onClick:()=>fileInputRef.current&&fileInputRef.current.click()},
+        h(Icon,{n:"paperclip",size:17})
+      ),
+      h("input",{className:"chat-input",placeholder,value:input,onChange:e=>setInput(e.target.value),disabled:sending,autoComplete:"off"}),
+      h("button",{type:"submit",className:"btn btn-primary btn-sm",disabled:(!input.trim()&&!pendingFile)||sending},
+        sending?h(Icon,{n:"loader",size:15}):h(Icon,{n:"send",size:15})
       )
     )
   );
 }
 
-/* ── Main ChatView ─────────────────────────────────────────────────────── */
 function ChatView(){
-  const {ME, USERS} = window.ESG_DATA;
-  // threadId: null = Kollegiumschat, number = DM with userId
-  const [threadId, setThreadId]   = useState(null);
-  const [threads, setThreads]     = useState({}); // { null: [msgs], uid: [msgs] }
-  const [unread, setUnread]       = useState({});  // { uid: count }
-  const [input, setInput]         = useState("");
-  const [sending, setSending]     = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [mobilePane, setMobilePane] = useState("list"); // "list" | "messages"
+  const{ME,USERS}=window.ESG_DATA;
+  const[threadId,setThreadId]=S(null);
+  const[threads,setThreads]=S({});
+  const[unread,setUnread]=S({});
+  const[input,setInput]=S("");
+  const[sending,setSending]=S(false);
+  const[loading,setLoading]=S(true);
+  const[mobilePane,setMobilePane]=S("list");
+  const[pendingFile,setPendingFile]=S(null);
+  const fileInputRef=T(null);
 
-  const KEY = threadId === null ? "group" : String(threadId);
-  const msgs = threads[KEY] || [];
+  const KEY=threadId===null?"group":String(threadId);
+  const msgs=threads[KEY]||[];
 
-  // Load thread on change
-  useEffect(()=>{
-    if(!window.ESG_API.hasSession()){ setLoading(false); return; }
+  v(()=>{
+    if(!window.ESG_API.hasSession()){setLoading(false);return;}
     setLoading(true);
-    const qs = threadId !== null ? `?to=${threadId}` : "";
-    window.ESG_API.fetch(`/api/chat${qs}`)
+    const qs=threadId!==null?"?to="+threadId:"";
+    window.ESG_API.fetch("/api/chat"+qs)
       .then(data=>{
-        const mapped = (data.messages||[]).map(mapMsg);
-        setThreads(prev=>({...prev, [KEY]:mapped}));
-        // clear unread for this thread
-        if(threadId !== null) setUnread(prev=>({...prev,[String(threadId)]:0}));
+        const mapped=(data.messages||[]).map(mapMsg);
+        setThreads(prev=>({...prev,[KEY]:mapped}));
+        if(threadId!==null)setUnread(prev=>({...prev,[String(threadId)]:0}));
       })
       .catch(()=>{})
       .finally(()=>setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[threadId]);
 
-  // Real-time WS events
-  useEffect(()=>{
+  v(()=>{
     function onChat(e){
-      const raw = e.detail && (e.detail.message || e.detail);
-      if(!raw || !raw.id) return;
-      const m = mapMsg(raw);
-      // Which thread does this message belong to?
-      const mKey = m.recipientId === null
-        ? "group"
-        : (m.userId === ME.id ? String(m.recipientId) : String(m.userId));
-
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const m=mapMsg(raw);
+      const mKey=m.recipientId===null?"group":(m.userId===ME.id?String(m.recipientId):String(m.userId));
       setThreads(prev=>{
-        const arr = prev[mKey] || [];
-        if(arr.some(x=>x.id===m.id)) return prev;
-        return {...prev, [mKey]: [...arr, m]};
+        const arr=prev[mKey]||[];
+        if(arr.some(x=>x.id===m.id))return prev;
+        return{...prev,[mKey]:[...arr,m]};
       });
-
-      // Increment unread if not viewing this thread
-      const activeKey = threadId === null ? "group" : String(threadId);
-      if(mKey !== activeKey && m.userId !== ME.id){
+      const activeKey=threadId===null?"group":String(threadId);
+      if(mKey!==activeKey&&m.userId!==ME.id){
         setUnread(prev=>({...prev,[mKey]:(prev[mKey]||0)+1}));
       }
     }
-    window.addEventListener("esg:chat", onChat);
-    return ()=>window.removeEventListener("esg:chat", onChat);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[threadId, ME.id]);
+    function keyFor(m){return m.recipientId===null?"group":(m.userId===ME.id?String(m.recipientId):String(m.userId));}
+    function onUpdated(e){
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const m=mapMsg(raw);const mKey=keyFor(m);
+      setThreads(prev=>{const arr=prev[mKey]||[];return{...prev,[mKey]:arr.map(x=>x.id===m.id?m:x)};});
+    }
+    function onDeleted(e){
+      const raw=e.detail&&(e.detail.message||e.detail);
+      if(!raw||!raw.id)return;
+      const rid=raw.recipient_id!=null?Number(raw.recipient_id):null;
+      const id=Number(raw.id);
+      setThreads(prev=>{
+        const next={...prev};
+        for(const k of Object.keys(next)){next[k]=next[k].filter(x=>x.id!==id);}
+        return next;
+      });
+    }
+    window.addEventListener("esg:chat",onChat);
+    window.addEventListener("esg:chat:updated",onUpdated);
+    window.addEventListener("esg:chat:deleted",onDeleted);
+    return()=>{window.removeEventListener("esg:chat",onChat);window.removeEventListener("esg:chat:updated",onUpdated);window.removeEventListener("esg:chat:deleted",onDeleted);};
+  },[threadId,ME.id]);
+
+  async function editMsg(m,text){
+    const prevContent=m.content;
+    setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.map(x=>x.id===m.id?{...x,content:text}:x)};});
+    try{
+      await window.ESG_API.fetch("/api/chat/"+m.id,{method:"PATCH",body:JSON.stringify({content:text})});
+    }catch(err){
+      setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.map(x=>x.id===m.id?{...x,content:prevContent}:x)};});
+      window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht bearbeitet werden."});
+    }
+  }
+  async function deleteMsg(m){
+    if(!window.confirm("Diese Nachricht löschen?"))return;
+    const arrBefore=threads[KEY]||[];
+    setThreads(prev=>{const arr=prev[KEY]||[];return{...prev,[KEY]:arr.filter(x=>x.id!==m.id)};});
+    try{
+      await window.ESG_API.fetch("/api/chat/"+m.id,{method:"DELETE"});
+    }catch(err){
+      setThreads(prev=>({...prev,[KEY]:arrBefore}));
+      window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gelöscht werden."});
+    }
+  }
 
   async function send(e){
     e.preventDefault();
-    const text = input.trim();
-    if(!text || sending) return;
+    const text=input.trim();
+    if(!text&&!pendingFile)return;
+    if(sending)return;
     setSending(true);
     setInput("");
+    let attachmentUrl=null,attachmentName=null;
     try{
-      const body = {content: text};
-      if(threadId !== null) body.to = threadId;
-      const data = await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
-      const m = mapMsg(data.message);
+      if(pendingFile){
+        const fd=new FormData();
+        fd.append("file",pendingFile);
+        const up=await window.ESG_API.uploadFile("/api/chat/upload",fd);
+        attachmentUrl=up.url;
+        attachmentName=up.name;
+        setPendingFile(null);
+        if(fileInputRef.current)fileInputRef.current.value="";
+      }
+      const body={content:text};
+      if(threadId!==null)body.to=threadId;
+      if(attachmentUrl)body.attachment_url=attachmentUrl;
+      if(attachmentName)body.attachment_name=attachmentName;
+      const data=await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
+      const m=mapMsg(data.message);
       setThreads(prev=>{
-        const arr = prev[KEY] || [];
-        return arr.some(x=>x.id===m.id) ? prev : {...prev, [KEY]:[...arr, m]};
+        const arr=prev[KEY]||[];
+        return arr.some(x=>x.id===m.id)?prev:{...prev,[KEY]:[...arr,m]};
       });
     }catch(err){
-      window._addToast && window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gesendet werden."});
+      window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gesendet werden."});
       setInput(text);
-    }finally{ setSending(false); }
+    }finally{setSending(false);}
+  }
+
+  function onFileSelect(e){
+    const f=e.target.files[0]||null;
+    setPendingFile(f);
+  }
+  function onClearFile(){
+    setPendingFile(null);
+    if(fileInputRef.current)fileInputRef.current.value="";
   }
 
   function openThread(id){
     setThreadId(id);
-    const k = id === null ? "group" : String(id);
+    const k=id===null?"group":String(id);
     setUnread(prev=>({...prev,[k]:0}));
     setMobilePane("messages");
   }
 
-  // Colleagues excluding self
-  const colleagues = USERS.filter(u=>u.id !== ME.id);
-  const totalUnread = Object.values(unread).reduce((a,b)=>a+b,0);
-
-  const activeThread = threadId !== null ? USERS.find(u=>u.id===threadId) : null;
-  const placeholder  = threadId === null
-    ? "Nachricht ans Kollegium…"
-    : `Nachricht an ${activeThread?.name||"…"}`;
+  const colleagues=(USERS||[]).filter(u=>u.id!==ME.id);
+  const totalUnread=Object.values(unread).reduce((a,b)=>a+b,0);
+  const activeThread=threadId!==null?(USERS||[]).find(u=>u.id===threadId):null;
+  const placeholder=threadId===null?"Nachricht ans Kollegium…":"Nachricht an "+(activeThread?.name||"…");
 
   return h("div",{className:"chat-layout"},
-    /* ── Thread list ── */
-    h("div",{className:`dm-list ${mobilePane==="messages"?"mobile-hidden":""}`},
+    h("div",{className:"dm-list"+(mobilePane==="messages"?" mobile-hidden":"")},
       h("div",{className:"dm-list-head"},
         h("span",null,"Nachrichten"),
-        totalUnread > 0 && h("span",{className:"dm-badge dm-badge-total"},totalUnread)
+        totalUnread>0&&h("span",{className:"dm-badge dm-badge-total"},totalUnread)
       ),
-      /* Group chat */
       h(ThreadItem,{
-        label:"Kollegium",
-        sub:"Alle Kolleg:innen",
+        label:"Kollegium",sub:"Alle Kolleg:innen",
         avatarEl:h("span",{className:"dm-group-icon"},h(Icon,{n:"users",size:18})),
-        active:threadId===null,
-        unread:unread["group"]||0,
-        onClick:()=>openThread(null),
+        active:threadId===null,unread:unread["group"]||0,onClick:()=>openThread(null),
       }),
       h("div",{className:"dm-sep"}),
       h("div",{className:"dm-list-label"},"Direktnachrichten"),
-      /* DM threads per colleague */
       colleagues.map(u=>h(ThreadItem,{
-        key:u.id,
-        label:u.name,
-        sub:u.email||"",
+        key:u.id,label:u.name,sub:u.email||"",
         avatarEl:h(Avatar,{userId:u.id,size:"sm"}),
-        active:threadId===u.id,
-        unread:unread[String(u.id)]||0,
+        active:threadId===u.id,unread:unread[String(u.id)]||0,
         onClick:()=>openThread(u.id),
       }))
     ),
-
-    /* ── Message pane ── */
-    h("div",{className:`dm-pane ${mobilePane==="list"?"mobile-hidden":""}`},
-      /* Mobile back button + header */
+    h("div",{className:"dm-pane"+(mobilePane==="list"?" mobile-hidden":"")},
       h("div",{className:"dm-pane-head"},
-        h("button",{className:"dm-back-btn",onClick:()=>setMobilePane("list")},
-          h(Icon,{n:"arrowLeft",size:16})
-        ),
-        threadId === null
-          ? h(Fragment,null,
-              h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),
-              h("strong",null,"Kollegiumschat")
-            )
-          : h(Fragment,null,
-              h(Avatar,{userId:threadId,size:"xs"}),
-              h("strong",null,activeThread?.name||"")
-            )
+        h("button",{className:"dm-back-btn",onClick:()=>setMobilePane("list")},h(Icon,{n:"arrowLeft",size:16})),
+        threadId===null
+          ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
+          :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||""))
       ),
-      h(MessagePane,{
-        ME, threadId, messages:msgs, loading, sending,
-        input, setInput, onSend:send, placeholder,
-      })
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg})
     )
   );
 }
 
-window.ChatView = ChatView;
+window.ChatView=ChatView;
 })();

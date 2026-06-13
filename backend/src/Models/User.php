@@ -27,19 +27,15 @@ final class User extends Model
     /** Alle Nutzer, die mindestens ein gemeinsames Team mit $userId haben (inkl. sich selbst). */
     public static function colleagues(int $userId): array
     {
+        // Das gesamte Kollegium: jede Lehrkraft kann jeder anderen schreiben
+        // und alle einander zuweisen. Der eigene Account wird mitgeliefert
+        // (das Frontend filtert ihn für die Direktnachrichten selbst heraus).
         $stmt = self::db()->prepare(
-            'SELECT DISTINCT ' . self::PUBLIC_COLS . '
+            'SELECT ' . self::PUBLIC_COLS . '
              FROM users u
-             WHERE u.id = :me
-                OR u.id IN (
-                    SELECT tm2.user_id
-                    FROM team_members tm1
-                    JOIN team_members tm2 ON tm2.team_id = tm1.team_id
-                    WHERE tm1.user_id = :me2 AND tm2.user_id <> :me3
-                )
              ORDER BY u.name ASC'
         );
-        $stmt->execute([':me' => $userId, ':me2' => $userId, ':me3' => $userId]);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

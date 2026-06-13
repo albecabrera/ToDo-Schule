@@ -43,6 +43,11 @@
   filter: saturate(118%);
 }
 .app > * { position: relative; z-index: 1; }
+/* Auf Mobil bleibt die Sidebar fixiert/off-canvas — die obige Regel darf das
+   position:fixed aus responsive.css NICHT überschreiben. */
+@media (max-width: 900px) {
+  .sidebar { position: fixed; z-index: 60; }
+}
 
 /* ── Topbar ────────────────────────────────────────────────────────────── */
 .topbar {

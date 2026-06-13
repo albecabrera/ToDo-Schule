@@ -2,13 +2,14 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v3";
+const CACHE = "esg-todo-v4";
 
 const PRECACHE = [
   "./",
   "./ToDo-Schule.html",
   "./manifest.webmanifest",
   "./dist/app.min.js",
+  "./dist/chat.js",
   "./vendor/react.production.min.js",
   "./vendor/react-dom.production.min.js",
   "./app/tokens.css",
@@ -17,6 +18,7 @@ const PRECACHE = [
   "./app/overlays.css",
   "./app/responsive.css",
   "./app/notes.css",
+  "./app/chat.css",
   "./assets/esg-mark.svg",
   "./assets/esg-mark-ondark.svg",
 ];
@@ -63,7 +65,25 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // stale-while-revalidate für Assets
+  // App-Code (JS/CSS): network-first — Änderungen am Bundle greifen sofort,
+  // Cache nur als Offline-Fallback. Verhindert "alter Code aus dem Cache".
+  const isAppCode = url.pathname.endsWith(".js") || url.pathname.endsWith(".css");
+  if (isAppCode && !isFont) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // stale-while-revalidate für statische Assets (Bilder, Fonts)
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)

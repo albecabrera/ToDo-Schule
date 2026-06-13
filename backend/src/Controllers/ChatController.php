@@ -229,6 +229,26 @@ final class ChatController
     }
 
     /** Route a chat event to the right WS rooms (DM → both parties, else broadcast). */
+    /**
+     * POST /api/chat/call/signal  body: { to, kind, data? }
+     * WebRTC-Signalisierung (1:1). Reicht Offer/Answer/ICE/Hangup an den
+     * persönlichen Room des Gegenübers weiter. Medien laufen P2P, nicht hier.
+     */
+    public static function callSignal(Request $req): void
+    {
+        $data = Validator::make($req->body, [
+            'to'   => 'required|int',
+            'kind' => 'required|string|max:16',
+        ]);
+        $to = (int) $data['to'];
+        Emitter::emit('user:' . $to, 'call:signal', [
+            'from'     => $req->userId(),
+            'kind'     => $data['kind'],
+            'data'     => $req->body['data'] ?? null,
+        ]);
+        Response::noContent();
+    }
+
     /** POST /api/chat/:id/pin — Nachricht an-/abpinnen. */
     public static function pin(Request $req): void
     {

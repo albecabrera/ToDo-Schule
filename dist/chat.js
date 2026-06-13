@@ -576,7 +576,9 @@ function ChatView(){
         h("div",{className:"grow"}),
         searching&&h("input",{className:"chat-search-input",autoFocus:true,placeholder:"Suchen…",value:query,onChange:e=>setQuery(e.target.value)}),
         h("button",{className:"iconbtn chat-search-btn"+(searching?" on":""),title:"In Unterhaltung suchen",onClick:()=>{const n=!searching;setSearching(n);if(!n)setQuery("");}},
-          h(Icon,{n:searching?"x":"search",size:16}))
+          h(Icon,{n:searching?"x":"search",size:16})),
+        threadId!==null&&h("button",{className:"iconbtn chat-call-btn",title:"Videoanruf starten",onClick:()=>window.startCall&&window.startCall(threadId)},
+          h(Icon,{n:"video",size:17}))
       ),
       h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null),query:searching?query:"",onPin:pinMsg})
     )

@@ -37,7 +37,7 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
   ofertas/answers/ICE) + STUN/TURN.
 - Recomendado solo si se justifica; es prácticamente otro módulo.
 
-### 5. Otros refinamientos
+### 3. Otros refinamientos
 - Read receipts en grupo (quién leyó) — complejo, opcional.
 - Indicador "en línea / visto por última vez" en el header del DM (ya hay presencia).
 - Buscar dentro del chat.

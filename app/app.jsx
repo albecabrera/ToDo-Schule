@@ -569,6 +569,9 @@ function App(){
         case "note:deleted":
           setNotes(prev => prev.filter(n=>n.id!==Number(payload.noteId)));
           break;
+        case "chat:message":
+          window.dispatchEvent(new CustomEvent("esg:chat", {detail: payload}));
+          break;
       }
     }
 
@@ -647,6 +650,8 @@ function App(){
           h("div",{className:"content-pad"},
             section==="notes"
               ? h(NotesView,{notes,onSave:saveNote,onDelete:deleteNote,searchVal})
+              : section==="chat"
+              ? (window.ChatView ? h(window.ChatView,{}) : null)
               : h(Fragment,null,
                   h(Subbar,{filters,setFilters,view,setView,sortBy,setSortBy,tasks:visibleTasks}),
                   view==="list"

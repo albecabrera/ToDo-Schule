@@ -302,6 +302,14 @@ function Sidebar({
         h("span",{className:"grow"},"Notizen & Planungen")
       ),
 
+      h("button",{
+        className:`navitem ${section==="chat"?"on":""}`,
+        onClick:()=>{ setSection("chat"); onClose(); }
+      },
+        h(Icon,{n:"messageCircle",size:17}),
+        h("span",{className:"grow"},"Kollegiumschat")
+      ),
+
       /* Bereiche header */
       h("div",{className:"sb-label"},
         h("span",null,"Bereiche"),

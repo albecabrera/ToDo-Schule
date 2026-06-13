@@ -13,6 +13,7 @@ offline-fähig, mit System-Benachrichtigungen.
 |---------|-------------|
 | **Aufgaben** | CRUD, Prioritäten, Fälligkeit, Zuweisungen, Teams, Listen-/Board-Ansicht, Audit-Trail, Share-Links |
 | **Notizen & Planungen** | Apuntes/Unterrichtsplanungen erstellen, privat halten oder mit einem Team teilen; Live-Sync bei allen Kolleg:innen |
+| **Kollegiumschat** | Echtzeit-Gruppen-Chat für alle Lehrkräfte — Nachrichten persistent in DB, WS-Push via `broadcast`-Channel |
 | **Markdown-Checklisten** | `- [ ] offen` / `- [x] erledigt` direkt in Notizen; Checkboxen sind in der Kartenansicht klickbar, Fortschritt (`✓ 2/5`) wird angezeigt |
 | **News-Button** | Roter ⚡-Button in der Topbar: Schnellnotiz/Checkliste von überall anlegen |
 | **Echtzeit** | WebSocket-Server pusht `task:*` und `note:*`-Events an alle Beteiligten (Auto-Reconnect) |
@@ -142,7 +143,8 @@ Vollständige Referenz: `backend/API-Referenz.html` · Backend-Details: `backend
 | PATCH/DELETE | `/api/notes/:id` | Notiz ändern (auch Checklisten-Toggle)/löschen |
 | GET | `/api/notifications` | Benachrichtigungen abrufen |
 | PATCH | `/api/notifications/:id` | Als gelesen markieren |
-| WS | `ws://localhost:8090/?token=…` | Echtzeit: `task:*`, `note:*`, `comment:added`, `user:assigned` |
+| GET/POST | `/api/chat` | Chatverlauf abrufen / Nachricht senden |
+| WS | `ws://localhost:8090/?token=…` | Echtzeit: `task:*`, `note:*`, `comment:added`, `user:assigned`, `chat:message` |
 
 ---
 
@@ -166,6 +168,14 @@ ALTER TABLE tasks
   ADD COLUMN remind_at DATETIME  NULL AFTER due_date,
   ADD COLUMN subtasks  LONGTEXT  NULL AFTER description,
   ADD COLUMN tags      TEXT      NULL AFTER subtasks;
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id    BIGINT UNSIGNED NOT NULL,
+  content    TEXT            NOT NULL,
+  created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS notifications (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

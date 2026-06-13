@@ -502,6 +502,18 @@ const ESG_API = {
   unshare:    (taskId)      => apiFetch(`/api/tasks/${taskId}/share`, {method:"DELETE"}),
   publicTask: (token)       => apiFetch(`/api/share/${token}`),
   getAudit:   (taskId)      => apiFetch(`/api/tasks/${taskId}/audit`),
+
+  async getChat(){
+    const { messages } = await apiFetch("/api/chat");
+    return (messages || []).map(m => ({
+      id: Number(m.id), userId: Number(m.user_id),
+      userName: m.user_name || "", content: m.content, ts: m.created_at,
+    }));
+  },
+  async sendChat(content){
+    const { message: m } = await apiFetch("/api/chat", {method:"POST", body:JSON.stringify({content})});
+    return { id: Number(m.id), userId: Number(m.user_id), userName: m.user_name||"", content: m.content, ts: m.created_at };
+  },
 };
 
 window.ESG_API = ESG_API;

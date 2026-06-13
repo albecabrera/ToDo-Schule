@@ -205,7 +205,7 @@ final class WebSocketServer
 
     private function roomsForUser(int $uid): array
     {
-        $rooms = ['user:' . $uid];
+        $rooms = ['user:' . $uid, 'broadcast'];
         foreach (Team::idsForUser($uid) as $teamId) {
             $rooms[] = 'team:' . $teamId;
         }

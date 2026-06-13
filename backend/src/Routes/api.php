@@ -7,6 +7,7 @@ namespace App\Routes;
 use App\Controllers\AttachmentController;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
+use App\Controllers\ChatController;
 use App\Controllers\CommentController;
 use App\Controllers\NotificationController;
 use App\Controllers\NoteController;
@@ -91,6 +92,10 @@ return (static function (): Router {
     $r->get('/api/notifications',          [NotificationController::class, 'index'],       ['auth' => true]);
     $r->patch('/api/notifications/:id',    [NotificationController::class, 'markRead'],    ['auth' => true]);
     $r->post('/api/notifications/read-all',[NotificationController::class, 'markAllRead'], ['auth' => true]);
+
+    // --- Kollegiumschat ------------------------------------------------------
+    $r->get('/api/chat',  [ChatController::class, 'index'], ['auth' => true]);
+    $r->post('/api/chat', [ChatController::class, 'store'], ['auth' => true]);
 
     return $r;
 })();

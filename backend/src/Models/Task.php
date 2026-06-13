@@ -151,7 +151,7 @@ final class Task extends Model
     {
         $pdo = self::db();
         $pdo->prepare('DELETE FROM task_assignees WHERE task_id = :t')->execute([':t' => $taskId]);
-        $ins = $pdo->prepare('INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (:t, :u)');
+        $ins = $pdo->prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (:t, :u)');
         foreach (array_unique(array_map('intval', $userIds)) as $uid) {
             $ins->execute([':t' => $taskId, ':u' => $uid]);
         }
@@ -159,7 +159,7 @@ final class Task extends Model
 
     public static function addAssignees(int $taskId, array $userIds): void
     {
-        $ins = self::db()->prepare('INSERT IGNORE INTO task_assignees (task_id, user_id) VALUES (:t, :u)');
+        $ins = self::db()->prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (:t, :u)');
         foreach (array_unique(array_map('intval', $userIds)) as $uid) {
             $ins->execute([':t' => $taskId, ':u' => $uid]);
         }

@@ -58,7 +58,7 @@ final class Notification extends Model
     public static function deleteOld(int $userId, int $keepDays = 30): void
     {
         self::db()->prepare(
-            'DELETE FROM notifications WHERE user_id = :uid AND created_at < DATE_SUB(NOW(), INTERVAL :d DAY)'
+            "DELETE FROM notifications WHERE user_id = :uid AND created_at < datetime('now', '-' || :d || ' days')"
         )->execute([':uid' => $userId, ':d' => $keepDays]);
     }
 }

@@ -29,21 +29,32 @@ final class Database
 
     private static function connect(): PDO
     {
-        $driver   = Env::get('DB_DRIVER', 'mysql');
-        $host     = Env::get('DB_HOST', '127.0.0.1');
-        $port     = Env::int('DB_PORT', 3306);
-        $database = Env::get('DB_DATABASE', 'todo_schule');
-        $user     = Env::get('DB_USERNAME', 'root');
-        $pass     = (string) Env::get('DB_PASSWORD', '');
-
-        $dsn = sprintf('%s:host=%s;port=%d;dbname=%s;charset=utf8mb4', $driver, $host, $port, $database);
+        $driver = Env::get('DB_DRIVER', 'sqlite');
 
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
-            PDO::ATTR_PERSISTENT         => Env::bool('DB_PERSISTENT', true),
         ];
+
+        if ($driver === 'sqlite') {
+            $defaultPath = dirname(__DIR__, 2) . '/database.sqlite';
+            $path = Env::get('DB_PATH', $defaultPath);
+            $pdo  = new PDO('sqlite:' . $path, null, null, $options);
+            // WAL mode: erlaubt parallele Reads während WS-Server schreibt
+            $pdo->exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+            return $pdo;
+        }
+
+        // Fallback: MySQL / MariaDB
+        $host     = Env::get('DB_HOST', '127.0.0.1');
+        $port     = Env::int('DB_PORT', 3306);
+        $database = Env::get('DB_DATABASE', 'todo_schule');
+        $user     = Env::get('DB_USERNAME', 'root');
+        $pass     = (string) Env::get('DB_PASSWORD', '');
+        $options[PDO::ATTR_PERSISTENT] = Env::bool('DB_PERSISTENT', true);
+
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
 
         $attempts = 0;
         do {
@@ -53,7 +64,6 @@ final class Database
                 if (++$attempts >= 3) {
                     throw $e;
                 }
-                // Kurzer Backoff vor dem nächsten Versuch (Reconnect-Logik).
                 usleep(250_000 * $attempts);
             }
         } while (true);
@@ -78,10 +88,14 @@ final class Database
 
     private static function isConnectionLost(PDOException $e): bool
     {
+        $msg  = $e->getMessage();
         $code = $e->errorInfo[1] ?? null;
-        // 2006 = server gone away, 2013 = lost connection during query
-        return in_array($code, [2006, 2013], true)
-            || str_contains($e->getMessage(), 'gone away');
+        // MySQL: 2006 = server gone away, 2013 = lost during query
+        if (in_array($code, [2006, 2013], true) || str_contains($msg, 'gone away')) {
+            return true;
+        }
+        // SQLite: SQLITE_BUSY wird durch busy_timeout abgefangen, aber Datei-Fehler gelten als verloren
+        return str_contains($msg, 'unable to open database');
     }
 
     /** Verbindung schließen (für Tests / Reconnect). */

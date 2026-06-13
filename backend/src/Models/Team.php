@@ -107,7 +107,7 @@ final class Team extends Model
     public static function addMember(int $teamId, int $userId, string $role = 'member'): void
     {
         self::db()->prepare(
-            'INSERT IGNORE INTO team_members (team_id, user_id, role) VALUES (:t, :u, :r)'
+            'INSERT OR IGNORE INTO team_members (team_id, user_id, role) VALUES (:t, :u, :r)'
         )->execute([':t' => $teamId, ':u' => $userId, ':r' => $role]);
     }
 

@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   content         TEXT    NOT NULL DEFAULT '',
   attachment_url  TEXT,
   attachment_name TEXT,
+  reply_to_id     INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL,
   created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at);

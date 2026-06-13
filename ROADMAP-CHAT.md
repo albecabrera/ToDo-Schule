@@ -18,6 +18,7 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 | **Reacciones emoji** | `POST /api/chat/:id/react` (toggle) → tabla `chat_reactions` → WS `chat:reaction` | `ChatController::react`, `ChatMessage::toggle/reactionsFor` |
 | **🎤 Mensajes de voz** | `MediaRecorder` (audio/webm) → sube por `/api/chat/upload` → adjunto de audio; reproductor `<audio>` inline. Sin cambios de backend (reutiliza adjuntos). Requiere HTTPS/localhost para el micrófono | `dist/chat.js` (MessagePane: startRec/stopRec, ChatAttachment: isAudioFile) |
 | **@Menciones** | Autocompletar al escribir `@`; al enviar va `mentions:[ids]`; backend emite `chat:mention` (+push) al mencionado aunque no esté en el hilo; resaltado en la burbuja | `ChatController::store`, `dist/chat.js` (renderMentions, pickMention, deriveMentions), WS case `chat:mention` en `app.min.js` |
+| **Responder / citar** | Columna `reply_to_id`; botón "Antworten" → barra de cita sobre el composer → al enviar va `reply_to`; la burbuja muestra el bloque citado (nombre + snippet) | `ChatMessage` (JOIN al padre), `ChatController::store`, `dist/chat.js` (replyTarget, chat-quote/chat-reply-bar) |
 
 **Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
 `chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
@@ -27,17 +28,13 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 
 ## 🔜 Siguiente (pendiente)
 
-### 1. Responder a un mensaje (reply / quote) — **esfuerzo bajo-medio**
-- Columna `reply_to_id` en `chat_messages`.
-- UI: botón "Responder" (ya hay acciones al hover) → cita el mensaje arriba del composer; la burbuja muestra el fragmento citado.
-
-### 2. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
+### 1. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
 - El puente WS por tabla `events` (~1s) NO sirve para señalización en vivo.
 - Requiere canal de señalización dedicado (WS directo cliente↔servidor para
   ofertas/answers/ICE) + STUN/TURN.
 - Recomendado solo si se justifica; es prácticamente otro módulo.
 
-### 3. Otros refinamientos
+### 2. Otros refinamientos
 - Read receipts en grupo (quién leyó) — complejo, opcional.
 - Indicador "en línea / visto por última vez" en el header del DM (ya hay presencia).
 - Buscar dentro del chat.

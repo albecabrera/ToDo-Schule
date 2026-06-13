@@ -502,6 +502,40 @@
 .chat-mention-opt:hover { background: var(--accent-soft); }
 .chat-mention-name { font-size: 14px; font-weight: 600; color: var(--text); }
 
+/* ── Reply / quote ────────────────────────────────────────────────────── */
+/* Quoted block inside a bubble */
+.chat-quote {
+  display: flex; flex-direction: column; gap: 1px;
+  border-left: 3px solid var(--accent);
+  padding: 4px 8px; margin-bottom: 5px;
+  background: rgba(0,0,0,.05); border-radius: 5px;
+  font-size: 12.5px; max-width: 100%;
+}
+.chat-msg.me .chat-quote { border-left-color: rgba(255,255,255,.7); background: rgba(255,255,255,.14); }
+.chat-quote-name { font-weight: 700; color: var(--accent); }
+.chat-msg.me .chat-quote-name { color: #fff; }
+.chat-quote-text {
+  color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px;
+}
+.chat-msg.me .chat-quote-text { color: rgba(255,255,255,.8); }
+
+/* Reply bar above composer */
+.chat-reply-bar {
+  display: flex; align-items: center; gap: 9px;
+  margin: 0 16px 6px; padding: 7px 12px;
+  background: var(--glass-bg-soft, var(--surface-2));
+  border-left: 3px solid var(--accent);
+  border-radius: 8px; color: var(--accent);
+}
+.chat-reply-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.chat-reply-to { font-size: 12px; font-weight: 700; color: var(--accent); }
+.chat-reply-snippet { font-size: 12.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-reply-cancel {
+  border: none; background: none; cursor: pointer;
+  font-size: 20px; line-height: 1; color: var(--text-2); padding: 0 4px; flex: none;
+}
+.chat-reply-cancel:hover { color: var(--coral, #ef4444); }
+
 /* ── Mobile: single-panel switching ──────────────────────────────────── */
 @media (max-width: 700px) {
   .dm-list   { width: 100%; border-right: none; }

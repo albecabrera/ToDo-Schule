@@ -7,7 +7,8 @@ const{useState:S,useEffect:v,useRef:T,Fragment:FR}=React,h=React.createElement;
 
 const QUICK_EMOJIS=["👍","❤️","✅","😂","🎉","👏"];
 
-function mapMsg(m){return{id:Number(m.id),userId:Number(m.user_id||m.userId),recipientId:m.recipient_id!=null?Number(m.recipient_id):null,userName:m.user_name||m.userName||"",content:m.content||"",attachmentUrl:m.attachment_url||null,attachmentName:m.attachment_name||null,ts:m.created_at||m.ts,reactions:(m.reactions||[]).map(r=>({emoji:r.emoji,userId:Number(r.user_id||r.userId),userName:r.user_name||r.userName||""}))};}
+function mapMsg(m){return{id:Number(m.id),userId:Number(m.user_id||m.userId),recipientId:m.recipient_id!=null?Number(m.recipient_id):null,userName:m.user_name||m.userName||"",content:m.content||"",attachmentUrl:m.attachment_url||null,attachmentName:m.attachment_name||null,ts:m.created_at||m.ts,reactions:(m.reactions||[]).map(r=>({emoji:r.emoji,userId:Number(r.user_id||r.userId),userName:r.user_name||r.userName||""})),replyTo:(m.reply_to_id||m.replyTo)?{id:Number(m.reply_to_id||(m.replyTo&&m.replyTo.id)),userName:m.reply_user_name||(m.replyTo&&m.replyTo.userName)||"",content:m.reply_content||(m.replyTo&&m.replyTo.content)||"",attachmentName:m.reply_attachment_name||(m.replyTo&&m.replyTo.attachmentName)||null}:null};}
+function replyPreview(r){if(!r)return"";return r.content||(r.attachmentName?(isAudioFile(r.attachmentName)?"🎤 Sprachnachricht":"📎 "+r.attachmentName):"");}
 function fmtTime(ts){if(!ts)return"";return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
 function fmtDate(ts){if(!ts)return"";const d=new Date(ts),today=new Date();if(d.toDateString()===today.toDateString())return"Heute";const yest=new Date(today);yest.setDate(yest.getDate()-1);if(d.toDateString()===yest.toDateString())return"Gestern";return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
 function groupByDate(msgs){const groups=[];let curDate=null;msgs.forEach(m=>{const d=new Date(m.ts).toDateString();if(d!==curDate){groups.push({date:fmtDate(m.ts),messages:[m]});curDate=d;}else groups[groups.length-1].messages.push(m);});return groups;}
@@ -76,7 +77,7 @@ function ChatAttachment({url,name,isMe}){
   );
 }
 
-function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice}){
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice,onReply,replyTarget,onCancelReply}){
   const bottomRef=T(null);
   const[editingId,setEditingId]=S(null);
   const[editText,setEditText]=S("");
@@ -178,6 +179,10 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                       )
                     )
                   :h(FR,null,
+                      m.replyTo&&h("div",{className:"chat-quote"},
+                        h("span",{className:"chat-quote-name"},m.replyTo.userName||"?"),
+                        h("span",{className:"chat-quote-text"},replyPreview(m.replyTo))
+                      ),
                       m.content&&h("div",{className:"chat-text"},renderMentions(m.content,colleagueNames,ME.name)),
                       m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
                       h("div",{className:"chat-ts"},
@@ -186,6 +191,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                       )
                     ),
                 !isEditing&&h("div",{className:"chat-msg-actions"},
+                  h("button",{className:"chat-act-btn",title:"Antworten",onClick:()=>onReply(m)},h(Icon,{n:"reply",size:13})),
                   h("button",{className:"chat-act-btn",title:"Reagieren",onClick:()=>setPickerId(pickerId===m.id?null:m.id)},h(Icon,{n:"smile",size:13})),
                   isMe&&m.content&&h("button",{className:"chat-act-btn",title:"Bearbeiten",onClick:()=>startEdit(m)},h(Icon,{n:"edit",size:13})),
                   isMe&&h("button",{className:"chat-act-btn",title:"Löschen",onClick:()=>onDeleteMsg(m)},h(Icon,{n:"trash",size:13}))
@@ -220,6 +226,14 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
         h(Avatar,{userId:u.id,size:"xs"}),
         h("span",{className:"chat-mention-name"},u.name)
       ))
+    ),
+    replyTarget&&!recording&&h("div",{className:"chat-reply-bar"},
+      h(Icon,{n:"reply",size:15}),
+      h("div",{className:"chat-reply-info"},
+        h("span",{className:"chat-reply-to"},"Antwort an "+(replyTarget.userId===ME.id?"dich":(replyTarget.userName||"?"))),
+        h("span",{className:"chat-reply-snippet"},replyPreview(replyTarget)||replyTarget.content)
+      ),
+      h("button",{type:"button",className:"chat-reply-cancel",title:"Abbrechen",onClick:onCancelReply},"×")
     ),
     recording
       ?h("div",{className:"chat-composer chat-recording"},
@@ -257,6 +271,7 @@ function ChatView(){
   const[loading,setLoading]=S(true);
   const[mobilePane,setMobilePane]=S("list");
   const[pendingFile,setPendingFile]=S(null);
+  const[replyTarget,setReplyTarget]=S(null);
   const fileInputRef=T(null);
   const lastTypingSent=T(0);
 
@@ -417,7 +432,7 @@ function ChatView(){
     return ids;
   }
 
-  async function deliver(text,file){
+  async function deliver(text,file,replyTo){
     let attachmentUrl=null,attachmentName=null;
     if(file){
       const fd=new FormData();
@@ -432,6 +447,7 @@ function ChatView(){
     if(attachmentName)body.attachment_name=attachmentName;
     const mentions=deriveMentions(text);
     if(mentions.length)body.mentions=mentions;
+    if(replyTo)body.reply_to=replyTo;
     const data=await window.ESG_API.fetch("/api/chat",{method:"POST",body:JSON.stringify(body)});
     const m=mapMsg(data.message);
     setThreads(prev=>{const arr=prev[KEY]||[];return arr.some(x=>x.id===m.id)?prev:{...prev,[KEY]:[...arr,m]};});
@@ -445,10 +461,11 @@ function ChatView(){
     setSending(true);
     setInput("");
     const file=pendingFile;
-    setPendingFile(null);
+    const reply=replyTarget?replyTarget.id:null;
+    setPendingFile(null);setReplyTarget(null);
     if(fileInputRef.current)fileInputRef.current.value="";
     try{
-      await deliver(text,file);
+      await deliver(text,file,reply);
     }catch(err){
       window._addToast&&window._addToast()({title:"Fehler",body:"Nachricht konnte nicht gesendet werden."});
       setInput(text);
@@ -472,6 +489,7 @@ function ChatView(){
     setThreadId(id);
     const k=id===null?"group":String(id);
     setUnread(prev=>({...prev,[k]:0}));
+    setReplyTarget(null);
     setMobilePane("messages");
   }
 
@@ -509,7 +527,7 @@ function ChatView(){
           ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
           :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||""))
       ),
-      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice})
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null)})
     )
   );
 }

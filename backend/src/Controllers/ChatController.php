@@ -147,18 +147,20 @@ final class ChatController
             'to'              => 'nullable|int',
             'attachment_url'  => 'nullable|string|max:500',
             'attachment_name' => 'nullable|string|max:255',
+            'reply_to'        => 'nullable|int',
         ]);
 
         $content        = trim((string) ($data['content'] ?? ''));
         $attachmentUrl  = $data['attachment_url'] ?? null;
         $attachmentName = $data['attachment_name'] ?? null;
+        $replyToId      = isset($data['reply_to']) && $data['reply_to'] !== null ? (int) $data['reply_to'] : null;
 
         if ($content === '' && $attachmentUrl === null) {
             throw new HttpException(422, 'Nachricht oder Datei erforderlich.');
         }
 
         $recipientId = isset($data['to']) && $data['to'] !== null ? (int) $data['to'] : null;
-        $message     = ChatMessage::create($req->userId(), $content, $recipientId, $attachmentUrl, $attachmentName);
+        $message     = ChatMessage::create($req->userId(), $content, $recipientId, $attachmentUrl, $attachmentName, $replyToId);
 
         self::fanOut($message, $recipientId, $req->userId(), 'chat:message');
 

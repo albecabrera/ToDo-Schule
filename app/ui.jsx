@@ -9,8 +9,11 @@ const {createElement:h,Fragment} = React;
 function Avatar({userId, size="md", showPresence=false, style={}}){
   const u = userId === "me" ? ME : USERS.find(u=>u.id===userId);
   if(!u) return null;
+  const inner = u.avatarUrl
+    ? h("img",{src:u.avatarUrl,alt:u.name,style:{width:"100%",height:"100%",objectFit:"cover",borderRadius:"inherit",display:"block"}})
+    : u.initials;
   return h("span",{className:`av ${size}`,style:{background:u.color,...style},title:u.name},
-    u.initials,
+    inner,
     showPresence && h("span",{className:`pres ${u.presence==="online"?"":u.presence==="away"?"away":"off"}`})
   );
 }

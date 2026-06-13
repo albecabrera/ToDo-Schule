@@ -7,6 +7,7 @@ namespace App\Routes;
 use App\Controllers\AttachmentController;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
+use App\Controllers\AvatarController;
 use App\Controllers\ChatController;
 use App\Controllers\CommentController;
 use App\Controllers\NotificationController;
@@ -35,9 +36,10 @@ return (static function (): Router {
     $r->post('/api/auth/logout',   [AuthController::class, 'logout']);
 
     // --- Profil ---------------------------------------------------------------
-    $r->get('/api/users',      [UserController::class, 'colleagues'], ['auth' => true]);
-    $r->get('/api/users/me',   [UserController::class, 'me'],         ['auth' => true]);
-    $r->patch('/api/users/me', [UserController::class, 'updateMe'],   ['auth' => true]);
+    $r->get('/api/users',            [UserController::class,  'colleagues'], ['auth' => true]);
+    $r->get('/api/users/me',         [UserController::class,  'me'],         ['auth' => true]);
+    $r->patch('/api/users/me',       [UserController::class,  'updateMe'],   ['auth' => true]);
+    $r->post('/api/users/me/avatar', [AvatarController::class,'upload'],     ['auth' => true]);
 
     // --- Aufgaben -------------------------------------------------------------
     $r->get('/api/tasks',        [TaskController::class, 'index'],   ['auth' => true]);

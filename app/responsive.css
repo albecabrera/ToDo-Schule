@@ -15,38 +15,107 @@
 .sb-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:50;backdrop-filter:blur(2px)}
 .sb-backdrop.open{display:block}
 
-/* ---- page title area on mobile ---- */
+/* ── Bugs button: solo en pantallas laptop/desktop ── */
+@media (max-width:1199px){
+  .btn-news{display:none!important}
+}
+
+/* ── Tablet & phablet (601 – 900 px) ─────────────────────────────────── */
 @media (max-width:900px){
   .login{grid-template-columns:1fr}
   .login-brand{display:none}
 
-  .sidebar{position:fixed;top:0;left:0;height:100%;z-index:60;
-    width:280px!important; /* override inline resize/collapse on mobile */
+  /* Sidebar: overlay flotante */
+  .sidebar{
+    position:fixed;top:0;left:0;height:100%;z-index:60;
+    width:280px!important;
     transform:translateX(-100%);
-    transition:transform .3s cubic-bezier(.22,1,.36,1)!important}
+    transition:transform .3s cubic-bezier(.22,1,.36,1)!important
+  }
   .sidebar.open{transform:none;box-shadow:var(--sh-pop)}
-  .sb-resizer{display:none} /* no resize handle on mobile */
+  .sb-resizer{display:none}
+
+  /* Topbar */
   .topbar .menu-btn{display:flex}
   .topbar .sp{flex:1}
   .topbar .search{display:none}
+  .topbar-tools .seg{display:none}  /* hide view-toggle on tablet */
+
+  /* Content */
   .page-h h1{font-size:18px}
   .content-pad{padding:16px 14px 80px}
   .fab{display:flex}
+
+  /* Board */
   .board{padding:6px 0 80px}
   .bcol{flex:0 0 285px}
+
+  /* Overlays */
   .drawer{width:100vw}
   .notif-panel{right:8px;width:calc(100vw - 16px)}
   .presence{display:none}
+
+  /* Team banner */
+  .team-banner{padding:10px 14px}
+  .team-stats{gap:14px}
+
+  /* Calendar */
+  .cal-grid{gap:1px}
+  .cal-week-grid{min-height:120px}
+
+  /* Modal */
+  .modal{padding:12px}
+  .modal-card{max-width:100%}
 }
 
-@media (max-width:560px){
+/* ── Mobile phones (≤ 599 px) ─────────────────────────────────────────── */
+@media (max-width:599px){
+  /* Topbar */
+  .topbar{padding:0 12px;height:56px;gap:10px}
+  .page-h h1{font-size:16px}
+  .page-h .crumb{display:none}
+
+  /* Task list */
+  .trow{padding:10px 12px}
   .trow .tright{gap:8px}
   .trow .cmt{display:none}
   .subbar{gap:8px}
-  .modal{padding:12px}
-  .modal-card{max-width:100%}
+  .filterpills{gap:5px}
+  .fpill{height:30px;padding:0 10px;font-size:12px}
+
+  /* Board */
+  .bcol{flex:0 0 260px}
+
+  /* Drawer full-screen */
+  .drawer{width:100vw}
+
+  /* Overlays */
+  .modal{padding:8px}
+  .modal-card{max-width:100%;border-radius:var(--r-lg) var(--r-lg) 0 0;margin:auto 0 0}
+  .modal{align-items:flex-end}
   .notif-panel{top:auto;bottom:60px;max-height:70vh}
   .toasts{right:12px;bottom:70px;width:calc(100vw - 24px)}
+
+  /* Team banner — stack vertically */
+  .team-banner{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .team-stats{gap:12px;flex-wrap:wrap}
+
+  /* Calendar — hide day numbers on very small */
+  .cal-week-grid{min-height:80px}
+  .cal-head .lbl{font-size:11px}
+
+  /* Chat */
+  .chat-wrap{padding:0}
+
+  /* Kiosk grid */
+  .kiosk-grid{grid-template-columns:1fr}
+
+  /* Subbar: hide label text, show only icons */
+  .subbar .seg button span{display:none}
+  .subbar .seg button{padding:0 8px}
+
+  /* Avatar size in userchip */
+  .userchip .nm{font-size:12.5px}
 }
 
 /* ---- density tweaks ---- */

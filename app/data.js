@@ -335,7 +335,7 @@ function mapUser(u){
     role:        u.abbreviation ? `Kürzel: ${u.abbreviation.toUpperCase()}` : "",
     email:       u.email || "",
     presence:    "online",
-    avatarUrl:   u.avatar_url || null,
+    avatarUrl:   u.avatar_url ? (API_BASE_URL + u.avatar_url) : null,
   };
 }
 
@@ -378,6 +378,12 @@ const ESG_API = {
   // --- Profil ---------------------------------------------------------------
   me:       ()     => apiFetch("/api/users/me"),
   updateMe: (data) => apiFetch("/api/users/me", {method:"PATCH", body:JSON.stringify(data)}),
+  async uploadAvatar(file){
+    const fd = new FormData();
+    fd.append("avatar", file);
+    const data = await apiUpload("/api/users/me/avatar", fd);
+    return { avatarUrl: API_BASE_URL + data.avatarUrl };
+  },
 
   // --- Aufgaben ---------------------------------------------------------------
   async getTasks(filters = {}){

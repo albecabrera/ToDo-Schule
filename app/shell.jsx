@@ -517,7 +517,21 @@ function ProfileModal({onClose}){
   const [msg, setMsg]       = useState(null);
   const avatarRef = useRef();
   const [avatarFile, setAvatarFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(ME.avatarUrl || null);
   const hasAPI = window.ESG_API.hasSession();
+
+  async function onAvatarChange(e){
+    const file = e.target.files[0] || null;
+    setAvatarFile(file);
+    if(!file){ setPreviewUrl(ME.avatarUrl||null); return; }
+    const lname = file.name.toLowerCase();
+    if((lname.endsWith(".heic")||lname.endsWith(".heif")) && window.heic2any){
+      const blob = await window.heic2any({blob:file,toType:"image/jpeg",quality:0.8});
+      setPreviewUrl(URL.createObjectURL(blob));
+    } else if(!lname.endsWith(".heic") && !lname.endsWith(".heif")){
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  }
 
   async function save(e){
     e.preventDefault();
@@ -531,12 +545,17 @@ function ProfileModal({onClose}){
         patch.currentPassword = oldPass;
       }
       if(avatarFile){
-        patch.avatarUrl = await new Promise(res=>{
-          const r=new FileReader(); r.onloadend=()=>res(r.result); r.readAsDataURL(avatarFile);
-        });
+        const lname = avatarFile.name.toLowerCase();
+        let fileToSend = avatarFile;
+        if((lname.endsWith(".heic")||lname.endsWith(".heif")) && window.heic2any){
+          const blob = await window.heic2any({blob:avatarFile,toType:"image/jpeg",quality:0.9});
+          fileToSend = new File([blob], avatarFile.name.replace(/\.heic$/i,".jpg"), {type:"image/jpeg"});
+        }
+        const result = await window.ESG_API.uploadAvatar(fileToSend);
+        ME.avatarUrl = result.avatarUrl;
       }
-      if(!Object.keys(patch).length){ setMsg("Keine Änderungen."); setBusy(false); return; }
-      if(hasAPI) await window.ESG_API.updateMe(patch);
+      if(!Object.keys(patch).length && !avatarFile){ setMsg("Keine Änderungen."); setBusy(false); return; }
+      if(Object.keys(patch).length && hasAPI) await window.ESG_API.updateMe(patch);
       if(patch.name){ ME.name=patch.name; ME.initials=patch.name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase(); }
       window._addToast()({title:"Profil gespeichert",body:"Änderungen wurden übernommen.",icon:"checkCircle",color:"var(--st-done-bg)",iconColor:"var(--st-done)"});
       onClose();
@@ -576,11 +595,16 @@ function ProfileModal({onClose}){
               ),
               h("div",{className:"field"},
                 h("label",null,"Profilfoto"),
-                h("input",{ref:avatarRef,type:"file",accept:"image/*",style:{display:"none"},onChange:e=>setAvatarFile(e.target.files[0]||null)}),
-                h("button",{type:"button",className:"btn btn-ghost btn-sm",onClick:()=>avatarRef.current?.click()},
-                  h(Icon,{n:"upload",size:14}),"Bild auswählen"
-                ),
-                avatarFile && h("span",{style:{fontSize:12,color:"var(--text-2)",marginLeft:8}},avatarFile.name)
+                h("div",{style:{display:"flex",alignItems:"center",gap:12,marginTop:4}},
+                  previewUrl && h("img",{src:previewUrl,alt:"Vorschau",style:{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--border)",flexShrink:0}}),
+                  h("div",null,
+                    h("input",{ref:avatarRef,type:"file",accept:"image/*, .heic, .heif",style:{display:"none"},onChange:onAvatarChange}),
+                    h("button",{type:"button",className:"btn btn-ghost btn-sm",onClick:()=>avatarRef.current?.click()},
+                      h(Icon,{n:"upload",size:14}),"Foto auswählen"
+                    ),
+                    avatarFile && h("p",{style:{fontSize:11,color:"var(--text-2)",marginTop:4}},avatarFile.name)
+                  )
+                )
               )
             ),
             msg && h("div",{style:{color:"var(--st-high,#c0392b)",fontSize:13,fontWeight:600,marginTop:8}},msg)

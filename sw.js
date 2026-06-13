@@ -2,12 +2,13 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v6";
+const CACHE = "esg-todo-v7";
 
 const PRECACHE = [
   "./",
   "./ToDo-Schule.html",
   "./manifest.webmanifest",
+  "./app/config.js",
   "./dist/app.min.js",
   "./dist/chat.js",
   "./vendor/react.production.min.js",
@@ -22,6 +23,11 @@ const PRECACHE = [
   "./app/chat.css",
   "./assets/esg-mark.svg",
   "./assets/esg-mark-ondark.svg",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/icon-maskable-512.png",
+  "./assets/icons/apple-touch-icon.png",
+  "./assets/icons/favicon-32.png",
 ];
 
 self.addEventListener("install", (event) => {

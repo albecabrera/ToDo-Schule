@@ -302,6 +302,18 @@ function TaskDrawer({task, onClose, onToggleDone, onShare, onSave, onDelete}){
                 value:localTask.remindAt||"",onChange:e=>update("remindAt",e.target.value||null)})
             )
           ),
+          /* Wiederholung (recurrence) */
+          h("div",{className:"dr-prop"},
+            h("div",{className:"k"},h(Icon,{n:"clock",size:15}),"Wiederholung"),
+            h("div",{className:"v"},
+              h("select",{className:"input btn-sm",style:{width:"auto"},
+                value:localTask.recurrence||"none",onChange:e=>update("recurrence",e.target.value)},
+                h("option",{value:"none"},"Keine"),
+                h("option",{value:"daily"},"Täglich"),
+                h("option",{value:"weekly"},"Wöchentlich"),
+                h("option",{value:"monthly"},"Monatlich"))
+            )
+          ),
           /* Bereich (editable) */
           h("div",{className:"dr-prop"},
             h("div",{className:"k"},h(Icon,{n:"users",size:15}),"Bereich"),

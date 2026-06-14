@@ -59,8 +59,8 @@ final class Task extends Model
     {
         $pdo = self::db();
         $stmt = $pdo->prepare(
-            'INSERT INTO tasks (title, description, status, priority, due_date, remind_at, team_id, created_by, subtasks, tags)
-             VALUES (:title, :description, :status, :priority, :due_date, :remind_at, :team_id, :created_by, :subtasks, :tags)'
+            'INSERT INTO tasks (title, description, status, priority, due_date, remind_at, team_id, created_by, subtasks, tags, recurrence)
+             VALUES (:title, :description, :status, :priority, :due_date, :remind_at, :team_id, :created_by, :subtasks, :tags, :recurrence)'
         );
         $stmt->execute([
             ':title'       => $data['title'],
@@ -73,6 +73,7 @@ final class Task extends Model
             ':created_by'  => $userId,
             ':subtasks'    => isset($data['subtasks']) ? json_encode($data['subtasks']) : null,
             ':tags'        => isset($data['tags'])     ? json_encode($data['tags'])     : null,
+            ':recurrence'  => $data['recurrence'] ?? null,
         ]);
         $id = (int) $pdo->lastInsertId();
 
@@ -97,6 +98,7 @@ final class Task extends Model
             'dueDate'     => 'due_date',
             'remindAt'    => 'remind_at',
             'teamId'      => 'team_id',
+            'recurrence'  => 'recurrence',
         ];
         $jsonFields = ['subtasks', 'tags'];
 

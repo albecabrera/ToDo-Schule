@@ -24,7 +24,7 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 
 ## ⚙️ Funcionalidad
 
-### 3. Tareas recurrentes (Wiederholung)
+### 3. Tareas recurrentes (Wiederholung) — ✅ HECHO
 - Regla de repetición (semanal/mensual: conferencias, guardias, Elternsprechtag).
 - Columna `recurrence` + generación de la siguiente instancia al completar.
 

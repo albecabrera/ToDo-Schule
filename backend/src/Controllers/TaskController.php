@@ -55,7 +55,12 @@ final class TaskController
             'assignees'   => 'nullable|array',
             'tags'        => 'nullable|array',
             'subtasks'    => 'nullable|array',
+            'recurrence'  => 'nullable|in:none,daily,weekly,monthly',
         ]);
+
+        if (array_key_exists('recurrence', $data) && ($data['recurrence'] === 'none' || $data['recurrence'] === '')) {
+            $data['recurrence'] = null;
+        }
 
         if (!empty($data['teamId']) && !Team::isMember((int) $data['teamId'], $req->userId())) {
             throw HttpException::forbidden('Du bist kein Mitglied dieses Teams', 'not_team_member');
@@ -92,8 +97,12 @@ final class TaskController
             'assignees'   => 'nullable|array',
             'tags'        => 'nullable|array',
             'subtasks'    => 'nullable|array',
+            'recurrence'  => 'nullable|in:none,daily,weekly,monthly',
         ]);
 
+        if (array_key_exists('recurrence', $data) && ($data['recurrence'] === 'none' || $data['recurrence'] === '')) {
+            $data['recurrence'] = null;
+        }
         if (array_key_exists('dueDate', $data)) {
             $data['dueDate'] = self::normalizeDate($data['dueDate']);
         }
@@ -112,7 +121,32 @@ final class TaskController
             'changes' => $changes,
         ]);
 
+        // Wiederkehrende Aufgabe: beim Abhaken die nächste Instanz erzeugen.
+        if (isset($changes['status']) && $changes['status']['to'] === 'done'
+            && in_array($updated['recurrence'] ?? null, ['daily', 'weekly', 'monthly'], true)) {
+            $next = Task::create([
+                'title'       => $updated['title'],
+                'description' => $updated['description'] ?? null,
+                'priority'    => $updated['priority'] ?? 'medium',
+                'dueDate'     => self::nextDue($updated['due_date'] ?? null, $updated['recurrence']),
+                'teamId'      => $updated['team_id'] ?? null,
+                'tags'        => $updated['tags'] ?? [],
+                'subtasks'    => $updated['subtasks'] ?? [],
+                'recurrence'  => $updated['recurrence'],
+                'assignees'   => $updated['assignees'] ?? [],
+            ], $req->userId());
+            Emitter::emitMany(Policy::taskChannels($next), 'task:created', ['task' => $next]);
+        }
+
         Response::json(['task' => $updated]);
+    }
+
+    /** Nächstes Fälligkeitsdatum für eine wiederkehrende Aufgabe. */
+    private static function nextDue(?string $due, string $rec): string
+    {
+        $base = $due ? new \DateTime($due) : new \DateTime('today');
+        $base->modify($rec === 'daily' ? '+1 day' : ($rec === 'weekly' ? '+1 week' : '+1 month'));
+        return $base->format('Y-m-d');
     }
 
     public static function destroy(Request $req): void

@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title       TEXT    NOT NULL,
   description TEXT,
   subtasks    TEXT,
+  recurrence  TEXT,
   tags        TEXT,
   status      TEXT    NOT NULL DEFAULT 'todo'
                      CHECK(status IN ('todo','in_progress','done')),

@@ -12,7 +12,7 @@ namespace App\Models;
 final class User extends Model
 {
     /** Öffentliche Felder (ohne password_hash). */
-    private const PUBLIC_COLS = 'id, email, abbreviation, must_change_password, name, avatar_url, last_seen_at, created_at, updated_at';
+    private const PUBLIC_COLS = 'id, email, abbreviation, must_change_password, is_admin, name, avatar_url, last_seen_at, created_at, updated_at';
 
     /** Aktualisiert „zuletzt gesehen" — gedrosselt (höchstens minütlich). */
     public static function touchLastSeen(int $id): void
@@ -139,6 +139,58 @@ final class User extends Model
             self::db()->prepare($sql)->execute($params);
         }
         return self::find($id);
+    }
+
+    /** Admin: alle Felder eines Nutzers aktualisieren (Name, E-Mail, Kürzel, Admin-Flag). */
+    public static function adminUpdate(int $id, array $fields): array
+    {
+        $allowed = ['name', 'email', 'abbreviation', 'is_admin'];
+        $set = [];
+        $params = [':id' => $id];
+        foreach ($allowed as $col) {
+            if (array_key_exists($col, $fields)) {
+                $set[] = "$col = :$col";
+                $params[":$col"] = $col === 'is_admin' ? (int) $fields[$col] : $fields[$col];
+            }
+        }
+        if ($set !== []) {
+            self::db()->prepare('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = :id')
+                ->execute($params);
+        }
+        return self::find($id);
+    }
+
+    /** Admin: neuen Nutzer anlegen (mit Kürzel + Admin-Flag). */
+    public static function adminCreate(string $email, string $password, ?string $name, ?string $abbreviation, bool $isAdmin = false): array
+    {
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        self::db()->prepare(
+            'INSERT INTO users (email, password_hash, name, abbreviation, is_admin, must_change_password)
+             VALUES (:e, :p, :n, :a, :admin, 1)'
+        )->execute([
+            ':e'     => strtolower(trim($email)),
+            ':p'     => $hash,
+            ':n'     => $name,
+            ':a'     => $abbreviation ? strtolower(trim($abbreviation)) : null,
+            ':admin' => (int) $isAdmin,
+        ]);
+        return self::find((int) self::db()->lastInsertId());
+    }
+
+    /** Admin: Nutzer löschen (kaskadierend). */
+    public static function adminDelete(int $id): void
+    {
+        self::db()->prepare('DELETE FROM users WHERE id = :id')->execute([':id' => $id]);
+    }
+
+    /** Alle Nutzer (für Admin-Panel). */
+    public static function all(): array
+    {
+        $stmt = self::db()->prepare(
+            'SELECT ' . self::PUBLIC_COLS . ' FROM users ORDER BY name ASC'
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     /** Mehrere Nutzer anhand ihrer IDs laden (für Zuweisungen/Mitglieder). */

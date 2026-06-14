@@ -68,6 +68,11 @@ final class Router
             if (!empty($opts['auth'])) {
                 AuthMiddleware::handle($req);
             }
+            if (!empty($opts['admin'])) {
+                if (empty($req->user['is_admin'])) {
+                    throw new HttpException(403, 'Nur für Administratoren', 'forbidden');
+                }
+            }
 
             // Controller aufrufen.
             [$class, $action] = $route['handler'];

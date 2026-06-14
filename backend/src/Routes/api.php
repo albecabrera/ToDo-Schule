@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Routes;
 
 use App\Controllers\ActivityController;
+use App\Controllers\AdminController;
 use App\Controllers\AttachmentController;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
@@ -54,6 +55,13 @@ return (static function (): Router {
 
     // --- Aktivitäts-Feed -----------------------------------------------------
     $r->get('/api/activity', [ActivityController::class, 'index'],  ['auth' => true]);
+
+    // --- Administration (nur is_admin=1) --------------------------------------
+    $r->get('/api/admin/users',              [AdminController::class, 'index'],         ['auth' => true, 'admin' => true]);
+    $r->post('/api/admin/users',             [AdminController::class, 'store'],         ['auth' => true, 'admin' => true]);
+    $r->patch('/api/admin/users/:id',        [AdminController::class, 'update'],        ['auth' => true, 'admin' => true]);
+    $r->post('/api/admin/users/:id/reset',   [AdminController::class, 'resetPassword'], ['auth' => true, 'admin' => true]);
+    $r->delete('/api/admin/users/:id',       [AdminController::class, 'destroy'],       ['auth' => true, 'admin' => true]);
 
     // --- Aufgaben -------------------------------------------------------------
     $r->get('/api/calendar.ics', [CalendarController::class, 'ics']);

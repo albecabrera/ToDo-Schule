@@ -9,7 +9,7 @@ Estado del chat/llamadas: ver `ROADMAP-CHAT.md` (ya muy completo).
 
 ## 🗄️ Persistencia + PWA
 
-### 1. Offline-first real (outbox + Background Sync) — 🟢 EN CURSO
+### 1. Offline-first real (outbox + Background Sync) — ✅ HECHO
 La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline**.
 - Outbox en **IndexedDB**: encola escrituras (tareas/notas/chat) hechas sin red.
 - Replay automático al volver la conexión (evento `online` + **Background Sync**).
@@ -38,7 +38,7 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 
 ## ⌨️ UX (buenas prácticas)
 
-### 6. Command Palette (⌘K) — alto impacto
+### 6. Command Palette (⌘K) — ✅ HECHO
 - Buscador único para saltar a cualquier tarea, nota, colega o **acción** ("Neue Aufgabe", "Dunkelmodus", "Vollbild"). Hoy ⌘K solo enfoca el buscador.
 
 ### 7. Accesibilidad (a11y) + `prefers-reduced-motion`

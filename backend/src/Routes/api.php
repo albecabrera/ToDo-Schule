@@ -15,6 +15,7 @@ use App\Controllers\NotificationController;
 use App\Controllers\NoteController;
 use App\Controllers\ShareController;
 use App\Controllers\TaskController;
+use App\Controllers\CalendarController;
 use App\Controllers\TeamController;
 use App\Controllers\UserController;
 
@@ -44,6 +45,8 @@ return (static function (): Router {
     $r->post('/api/users/me/avatar', [AvatarController::class,'upload'],     ['auth' => true]);
 
     // --- Aufgaben -------------------------------------------------------------
+    $r->get('/api/calendar.ics', [CalendarController::class, 'ics']);
+    $r->get('/api/calendar/token', [CalendarController::class, 'token'], ['auth' => true]);
     $r->get('/api/tasks',        [TaskController::class, 'index'],   ['auth' => true]);
     $r->post('/api/tasks',       [TaskController::class, 'store'],   ['auth' => true]);
     $r->get('/api/tasks/:id',    [TaskController::class, 'show'],    ['auth' => true]);

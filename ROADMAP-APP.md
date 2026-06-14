@@ -28,7 +28,7 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 - Regla de repetición (semanal/mensual: conferencias, guardias, Elternsprechtag).
 - Columna `recurrence` + generación de la siguiente instancia al completar.
 
-### 4. Exportar calendario (iCal / .ics)
+### 4. Exportar calendario (iCal / .ics) — ✅ HECHO
 - Endpoint que genera `.ics` con las tareas con fecha → suscribible en Google Calendar/Outlook del profe.
 
 ### 5. Búsqueda global de la app
@@ -41,10 +41,10 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 ### 6. Command Palette (⌘K) — ✅ HECHO
 - Buscador único para saltar a cualquier tarea, nota, colega o **acción** ("Neue Aufgabe", "Dunkelmodus", "Vollbild"). Hoy ⌘K solo enfoca el buscador.
 
-### 7. Accesibilidad (a11y) + `prefers-reduced-motion`
+### 7. Accesibilidad (a11y) + `prefers-reduced-motion` — ✅ HECHO
 - Foco visible, navegación por teclado en modales/drawer, roles ARIA, respeto a "reducir movimiento". En entornos públicos en Alemania es prácticamente exigible (BITV/WCAG).
 
-### 8. Botón "Instalar app" propio
+### 8. Botón "Instalar app" propio — ✅ HECHO
 - Capturar `beforeinstallprompt` y mostrar un botón visible → sube la adopción frente al prompt nativo.
 
 ---

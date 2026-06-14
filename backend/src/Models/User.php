@@ -90,6 +90,31 @@ final class User extends Model
         )->execute([':p' => password_hash($password, PASSWORD_BCRYPT), ':id' => $id]);
     }
 
+    /** Liefert (und erzeugt bei Bedarf) das iCal-Abo-Token eines Nutzers. */
+    public static function icsToken(int $id): string
+    {
+        $stmt = self::db()->prepare('SELECT ics_token FROM users WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        $tok = (string) ($stmt->fetchColumn() ?: '');
+        if ($tok === '') {
+            $tok = bin2hex(random_bytes(20));
+            self::db()->prepare('UPDATE users SET ics_token = :t WHERE id = :id')
+                ->execute([':t' => $tok, ':id' => $id]);
+        }
+        return $tok;
+    }
+
+    public static function findByIcsToken(string $token): ?array
+    {
+        if ($token === '') {
+            return null;
+        }
+        $stmt = self::db()->prepare('SELECT id, name FROM users WHERE ics_token = :t');
+        $stmt->execute([':t' => $token]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /** Setzt das Passwort zurück und erzwingt einen Wechsel beim nächsten Login. */
     public static function resetToTemporary(int $id, string $password): void
     {

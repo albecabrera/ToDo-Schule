@@ -2,7 +2,7 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v19";
+const CACHE = "esg-todo-v20";
 
 const PRECACHE = [
   "./",
@@ -14,7 +14,9 @@ const PRECACHE = [
   "./dist/chat.js",
   "./dist/call.js",
   "./dist/palette.js",
+  "./dist/install.js",
   "./app/call.css",
+  "./app/a11y.css",
   "./vendor/react.production.min.js",
   "./vendor/react-dom.production.min.js",
   "./vendor/heic2any.min.js",

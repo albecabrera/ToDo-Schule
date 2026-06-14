@@ -70,7 +70,7 @@ function CommandPalette(){
 
   if(!open)return null;
   return h("div",{className:"cmdk-scrim",onClick:()=>setOpen(false)},
-    h("div",{className:"cmdk",onClick:e=>e.stopPropagation()},
+    h("div",{className:"cmdk",role:"dialog","aria-modal":"true","aria-label":"Befehlspalette",onClick:e=>e.stopPropagation()},
       h("div",{className:"cmdk-input-row"},
         h(Icon,{n:"search",size:18}),
         h("input",{ref:inputRef,className:"cmdk-input",placeholder:"Suchen oder Aktion… (↑↓ Enter)",value:q,

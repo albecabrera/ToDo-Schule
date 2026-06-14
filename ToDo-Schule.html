@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="app/responsive.css">
   <link rel="stylesheet" href="app/call.css">
   <link rel="stylesheet" href="app/liquid-glass.css">
+  <link rel="stylesheet" href="app/a11y.css">
 
   <!-- Runtime-Konfiguration: API-/WS-Adressen (lokal vs. Server, ohne Build) -->
   <script src="app/config.js"></script>
@@ -53,8 +54,11 @@
   <script defer src="dist/call.js"></script>
   <!-- Command Palette ⌘K (separates Modul) -->
   <script defer src="dist/palette.js"></script>
+  <!-- PWA „App installieren"-Button -->
+  <script defer src="dist/install.js"></script>
 </head>
 <body>
+  <a href="#hauptinhalt" class="skip-link">Zum Inhalt springen</a>
   <div id="root"></div>
 </body>
 </html>

@@ -116,7 +116,7 @@ function CallManager(){
 
   if(state==="idle")return null;
   const name=peer!=null?userName(peer):"";
-  return h("div",{className:"call-overlay"},
+  return h("div",{className:"call-overlay",role:"dialog","aria-modal":"true","aria-label":"Anruf"},
     h("div",{className:"call-stage"},
       h("video",{ref:remoteRef,className:"call-remote",autoPlay:true,playsInline:true}),
       h("video",{ref:localRef,className:"call-local",autoPlay:true,playsInline:true,muted:true}),

@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Routes;
 
+use App\Controllers\ActivityController;
 use App\Controllers\AttachmentController;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
 use App\Controllers\AvatarController;
 use App\Controllers\ChatController;
+use App\Controllers\GdprController;
 use App\Controllers\PushController;
 use App\Controllers\CommentController;
 use App\Controllers\NotificationController;
 use App\Controllers\NoteController;
+use App\Controllers\SearchController;
 use App\Controllers\ShareController;
 use App\Controllers\TaskController;
 use App\Controllers\CalendarController;
@@ -38,11 +41,19 @@ return (static function (): Router {
     $r->post('/api/auth/logout',   [AuthController::class, 'logout']);
     $r->post('/api/auth/reset-password', [AuthController::class, 'resetPassword'], ['rateLimit' => 'auth']);
 
-    // --- Profil ---------------------------------------------------------------
-    $r->get('/api/users',            [UserController::class,  'colleagues'], ['auth' => true]);
-    $r->get('/api/users/me',         [UserController::class,  'me'],         ['auth' => true]);
-    $r->patch('/api/users/me',       [UserController::class,  'updateMe'],   ['auth' => true]);
-    $r->post('/api/users/me/avatar', [AvatarController::class,'upload'],     ['auth' => true]);
+    // --- Profil & DSGVO -------------------------------------------------------
+    $r->get('/api/users',                [UserController::class,  'colleagues'], ['auth' => true]);
+    $r->get('/api/users/me',             [UserController::class,  'me'],         ['auth' => true]);
+    $r->patch('/api/users/me',           [UserController::class,  'updateMe'],   ['auth' => true]);
+    $r->post('/api/users/me/avatar',     [AvatarController::class,'upload'],     ['auth' => true]);
+    $r->get('/api/users/me/export',      [GdprController::class,  'export'],     ['auth' => true]);
+    $r->delete('/api/users/me',          [GdprController::class,  'deleteMe'],   ['auth' => true]);
+
+    // --- Globale Suche --------------------------------------------------------
+    $r->get('/api/search',   [SearchController::class,  'search'], ['auth' => true]);
+
+    // --- Aktivitäts-Feed -----------------------------------------------------
+    $r->get('/api/activity', [ActivityController::class, 'index'],  ['auth' => true]);
 
     // --- Aufgaben -------------------------------------------------------------
     $r->get('/api/calendar.ics', [CalendarController::class, 'ics']);

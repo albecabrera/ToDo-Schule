@@ -17,8 +17,10 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 - UI: banner "Sin conexión" + contador "N ausstehend".
 - Archivos: `dist/offline.js`, parches a `apiFetch`, `sw.js` (sync).
 
-### 2. Backups automáticos de la SQLite
-- Cron diario que copia `database.sqlite` con timestamp + retención. Un colegio no puede perder el año de planificación.
+### 2. Backups automáticos de la SQLite — ✅ HECHO
+- `bin/backup.php`: copia `database.sqlite` con timestamp, retención configurable (`--keep=N` días).
+- Cron recomendado: `0 2 * * * php /ruta/bin/backup.php >> /var/log/esg-backup.log`
+- Backups en `storage/backups/` (gitignored).
 
 ---
 
@@ -31,8 +33,10 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 ### 4. Exportar calendario (iCal / .ics) — ✅ HECHO
 - Endpoint que genera `.ics` con las tareas con fecha → suscribible en Google Calendar/Outlook del profe.
 
-### 5. Búsqueda global de la app
-- Hoy la búsqueda de tareas filtra por título. Falta una que cruce **tareas + notas + adjuntos** (server-side).
+### 5. Búsqueda global de la app — ✅ HECHO
+- `GET /api/search?q=` cruza tareas + notas + adjuntos (server-side, SQLite LIKE).
+- Frontend: modal overlay `GlobalSearch` (Liquid Glass), activado con Enter en el topbar (≥2 chars) o con `esg:open-search` event.
+- Resultados agrupados por tipo con iconos + subtítulo contextual.
 
 ---
 
@@ -51,11 +55,15 @@ La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline*
 
 ## 🔒 Robustez / cumplimiento (Alemania)
 
-### 9. DSGVO/GDPR
-- Exportar mis datos, borrar cuenta, aviso de privacidad. Datos de profesores = sensibles.
+### 9. DSGVO/GDPR — ✅ HECHO
+- `GET /api/users/me/export` → JSON con perfil, tareas, notas, comentarios, mensajes, adjuntos.
+- `DELETE /api/users/me` (body `{password}`) → borrado cascada + archivos físicos.
+- Frontend: sección "Datenschutz (DSGVO)" en el perfil modal con botones "Daten exportieren" y "Konto löschen".
 
-### 10. Auditoría/actividad ampliada
-- Ya hay audit-trail; ampliarlo a un feed de actividad por Bereich/usuario.
+### 10. Auditoría/actividad ampliada — ✅ HECHO
+- `GET /api/activity?team_id=&user_id=&action=&limit=` — feed global filtrable.
+- Frontend: sección "Aktivität" en el sidebar, timeline con dot-line, diff-chips (antes → después), filtros por Bereich y Lehrkraft.
+- Live-update vía `esg:task-changed` event desde WS.
 
 ---
 

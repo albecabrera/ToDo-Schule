@@ -35,10 +35,15 @@ Detalle completo con comandos y configs en [`DEPLOY.md`](./DEPLOY.md).
 - [ ] **PHP 8.1+** instalado en el servidor (local tenés 8.5)
 - [ ] **API PHP corriendo** (php-fpm sirviendo `backend/public/`)
 - [ ] **WebSocket como servicio systemd** (`todo-schule-ws.service`) → si no, no hay tiempo real
+  - ⚠️ Si el tiempo real "deja de andar" (chat/llamadas no llegan a otros), **reiniciá el proceso WS**. Se desincroniza si queda corriendo durante cambios grandes de esquema.
+- [ ] **Web-Push (VAPID)** — para notificaciones con la app cerrada:
+  - [ ] `php backend/bin/generate-vapid.php` y pegar las 3 líneas que imprime en `.env` (o dejar `storage/vapid.json`)
+- [ ] **Videollamadas tras NATs estrictos:** opcional, añadir un **TURN server** (ahora solo STUN; funciona en la mayoría de redes)
 - [ ] **`backend/.env`** en el servidor:
   - [ ] `JWT_SECRET` nuevo (`php -r "echo bin2hex(random_bytes(32));"`)
   - [ ] `SQLITE_PATH` con la ruta absoluta de `database.sqlite`
   - [ ] `ALLOWED_ORIGIN=https://tu-dominio.de`
+  - [ ] `VAPID_*` (del paso de Web-Push, si querés push)
 - [ ] **Permisos de escritura** para el usuario del servidor (ej. `www-data`) en:
   - [ ] `backend/database.sqlite` (+ `-wal`, `-shm`)
   - [ ] `backend/public/avatars/`

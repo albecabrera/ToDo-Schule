@@ -32,9 +32,10 @@ final class ChatController
 
         $payload = ['messages' => $msgs];
 
-        // Lesebestätigung (nur DM): bis zu welcher eigenen Nachricht hat der
-        // Gesprächspartner gelesen? + eingehende DMs als gelesen markieren.
+        $lastMsgId = $msgs ? (int) end($msgs)['id'] : 0;
+
         if ($to !== null) {
+            // DM: bis zu welcher eigenen Nachricht hat der Partner gelesen?
             $payload['readUpTo'] = ChatMessage::lastReadBy($to, $req->userId());
             $lastIncoming = 0;
             foreach ($msgs as $m) {
@@ -45,13 +46,32 @@ final class ChatController
             if ($lastIncoming > 0) {
                 ChatMessage::markRead($req->userId(), $to, $lastIncoming);
                 Emitter::emit('user:' . $to, 'chat:read', [
-                    'reader'     => $req->userId(),
-                    'lastReadId' => $lastIncoming,
+                    'reader' => $req->userId(), 'lastReadId' => $lastIncoming,
                 ]);
             }
+        } else {
+            // Gruppe: peer_id = 0. Eigenen Lesestand setzen + Leserliste mitgeben.
+            if ($lastMsgId > 0) {
+                ChatMessage::markReadGroup($req->userId(), $lastMsgId);
+                Emitter::emit('broadcast', 'chat:read', [
+                    'reader' => $req->userId(), 'lastReadId' => $lastMsgId, 'group' => true,
+                ]);
+            }
+            $payload['groupReaders'] = ChatMessage::groupReaders($req->userId());
         }
 
         Response::json($payload);
+    }
+
+    /** GET /api/chat/search?q=… — globale Suche über alle sichtbaren Nachrichten. */
+    public static function search(Request $req): void
+    {
+        $q = trim((string) ($req->query['q'] ?? ''));
+        if (mb_strlen($q) < 2) {
+            Response::json(['results' => []]);
+            return;
+        }
+        Response::json(['results' => ChatMessage::search($req->userId(), $q)]);
     }
 
     /** POST /api/chat/typing  body: { to? } — flüchtiger „schreibt…"-Hinweis. */

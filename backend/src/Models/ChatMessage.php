@@ -177,4 +177,50 @@ final class ChatMessage extends Model
         $stmt->execute([':p' => $peerId, ':u' => $userId]);
         return (int) ($stmt->fetchColumn() ?: 0);
     }
+
+    public static function markReadGroup(int $userId, int $lastReadId): void
+    {
+        self::db()->prepare(
+            'INSERT INTO chat_group_reads (user_id, last_read_id, updated_at)
+             VALUES (:u, :l, datetime(\'now\'))
+             ON CONFLICT(user_id) DO UPDATE SET
+                last_read_id = MAX(last_read_id, excluded.last_read_id),
+                updated_at   = excluded.updated_at'
+        )->execute([':u' => $userId, ':l' => $lastReadId]);
+    }
+
+    /** Leserstände im Gruppenchat, außer dem eigenen. */
+    public static function groupReaders(int $exceptUserId): array
+    {
+        $stmt = self::db()->prepare(
+            'SELECT r.user_id, r.last_read_id, u.name AS user_name
+             FROM chat_group_reads r LEFT JOIN users u ON u.id = r.user_id
+             WHERE r.user_id <> :me'
+        );
+        $stmt->execute([':me' => $exceptUserId]);
+        return array_map(static fn ($r) => [
+            'user_id'    => (int) $r['user_id'],
+            'lastReadId' => (int) $r['last_read_id'],
+            'user_name'  => $r['user_name'],
+        ], $stmt->fetchAll());
+    }
+
+    /** Globale Suche über alle für $userId sichtbaren Nachrichten. */
+    public static function search(int $userId, string $q, int $limit = 40): array
+    {
+        $stmt = self::db()->prepare(
+            'SELECT ' . self::COLS . ', rec.name AS recipient_name
+             FROM chat_messages m ' . self::JOINS . '
+             LEFT JOIN users rec ON rec.id = m.recipient_id
+             WHERE m.content LIKE :q
+               AND (m.recipient_id IS NULL OR m.user_id = :me OR m.recipient_id = :me2)
+             ORDER BY m.created_at DESC LIMIT :lim'
+        );
+        $stmt->bindValue(':q', '%' . $q . '%');
+        $stmt->bindValue(':me', $userId, \PDO::PARAM_INT);
+        $stmt->bindValue(':me2', $userId, \PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }

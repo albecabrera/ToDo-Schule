@@ -21,6 +21,10 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 | **Responder / citar** | Columna `reply_to_id`; botón "Antworten" → barra de cita sobre el composer → al enviar va `reply_to`; la burbuja muestra el bloque citado (nombre + snippet) | `ChatMessage` (JOIN al padre), `ChatController::store`, `dist/chat.js` (replyTarget, chat-quote/chat-reply-bar) |
 | **Buscar en el chat** | Lupa en el header del hilo → filtra los mensajes del hilo (cliente) y resalta coincidencias | `dist/chat.js` (highlightText, query) |
 | **Fijar mensajes** | Columna `pinned`; acción 📌 al hover → `POST /api/chat/:id/pin` (toggle) → WS `chat:pinned`; barra de fijados arriba del hilo | `ChatMessage::togglePin`, `ChatController::pin`, `dist/chat.js` (chat-pinned-bar) |
+| **📹 Videollamada 1:1 (WebRTC)** | Señalización por el WS bridge (`/api/chat/call/signal` → `call:signal`), media P2P (STUN Google); botón 📹 en header DM, overlay con PiP + controles (mic/cámara/colgar) | `ChatController::callSignal`, `dist/call.js` (CallManager), `app/call.css` |
+| **Read receipts en grupo** | Tabla `chat_group_reads`; al abrir el grupo marca leído + emite `chat:read{group}`; mensajes propios muestran "✓✓ N" | `ChatMessage::markReadGroup/groupReaders`, `ChatController::index` |
+| **Visto por última vez** | Columna `users.last_seen_at` (actualizada gedrosselt en `AuthMiddleware`); el header del DM muestra "zuletzt aktiv vor X" | `User::touchLastSeen`, `dist/chat.js` (lastSeenLabel) |
+| **Búsqueda global** | `GET /api/chat/search?q=` sobre todos los hilos visibles; input en la lista de hilos → resultados con etiqueta + snippet, click abre el hilo | `ChatMessage::search`, `ChatController::search`, `dist/chat.js` (dm-results) |
 
 **Eventos WS usados:** `chat:message`, `chat:updated`, `chat:deleted`,
 `chat:typing`, `chat:read`, `chat:reaction` (todos despachados como
@@ -30,16 +34,11 @@ seguir construyendo. Stack: WS-Bridge por tabla `events` (poll ~1s) → eventos
 
 ## 🔜 Siguiente (pendiente)
 
-### 1. 📹 Llamada / videollamada 1:1 (WebRTC) — **esfuerzo alto · riesgo alto**
-- El puente WS por tabla `events` (~1s) NO sirve para señalización en vivo.
-- Requiere canal de señalización dedicado (WS directo cliente↔servidor para
-  ofertas/answers/ICE) + STUN/TURN.
-- Recomendado solo si se justifica; es prácticamente otro módulo.
-
-### 2. Otros refinamientos
-- Read receipts en grupo (quién leyó) — complejo, opcional.
-- Indicador "visto por última vez" en el header del DM (ya hay presencia online/away).
-- Búsqueda global (todos los hilos a la vez, server-side) — la actual es por hilo.
+El chat está **completo** para un colegio. Ideas opcionales a futuro:
+- **TURN server** para videollamadas tras NATs estrictos (ahora solo STUN; funciona en la mayoría de redes pero no todas).
+- **Llamadas grupales** (varios participantes) — bastante más complejo (malla o SFU).
+- Read receipts en grupo con lista de "quién" (ahora solo el número).
+- Reenviar mensajes a otro hilo.
 
 ---
 

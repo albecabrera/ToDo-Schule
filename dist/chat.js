@@ -24,6 +24,15 @@ function highlightText(content,query){
 }
 function replyPreview(r){if(!r)return"";return r.content||(r.attachmentName?(isAudioFile(r.attachmentName)?"🎤 Sprachnachricht":"📎 "+r.attachmentName):"");}
 function fmtTime(ts){if(!ts)return"";return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
+function lastSeenLabel(ts){
+  if(!ts)return"";
+  const d=new Date((ts+"").replace(" ","T")+(/(Z|[+\-]\d\d:?\d\d)$/.test(ts)?"":"Z"));
+  const sec=(Date.now()-d.getTime())/1000;
+  if(sec<120)return"gerade aktiv";
+  if(sec<3600)return"zuletzt aktiv vor "+Math.floor(sec/60)+" Min";
+  if(sec<86400)return"zuletzt aktiv vor "+Math.floor(sec/3600)+" Std";
+  return"zuletzt aktiv am "+d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"});
+}
 function fmtDate(ts){if(!ts)return"";const d=new Date(ts),today=new Date();if(d.toDateString()===today.toDateString())return"Heute";const yest=new Date(today);yest.setDate(yest.getDate()-1);if(d.toDateString()===yest.toDateString())return"Gestern";return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
 function groupByDate(msgs){const groups=[];let curDate=null;msgs.forEach(m=>{const d=new Date(m.ts).toDateString();if(d!==curDate){groups.push({date:fmtDate(m.ts),messages:[m]});curDate=d;}else groups[groups.length-1].messages.push(m);});return groups;}
 // Reaktionen nach Emoji bündeln → [{emoji,count,mine,names}]
@@ -91,7 +100,7 @@ function ChatAttachment({url,name,isMe}){
   );
 }
 
-function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice,onReply,replyTarget,onCancelReply,query,onPin}){
+function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,onSend,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg,onDeleteMsg,onReact,readUpTo,typingName,onSendVoice,onReply,replyTarget,onCancelReply,query,onPin,groupReaders}){
   const bottomRef=T(null);
   const[editingId,setEditingId]=S(null);
   const[editText,setEditText]=S("");
@@ -192,6 +201,7 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
           const reacts=groupReactions(m.reactions,ME.id);
           const showReceipt=isMe&&threadId!==null; // ✓/✓✓ nur in DMs
           const isRead=readUpTo!=null&&m.id<=readUpTo;
+          const groupReadCount=isMe&&threadId===null?(groupReaders||[]).filter(r=>r.lastReadId>=m.id).length:0;
           return h("div",{key:m.id,className:"chat-msg"+(isMe?" me":"")},
             !isMe&&h(Avatar,{userId:m.userId,size:"xs"}),
             h("div",{className:"chat-bubble-wrap"},
@@ -215,7 +225,8 @@ function MessagePane({ME,USERS,threadId,messages,loading,sending,input,setInput,
                       m.attachmentUrl&&h(ChatAttachment,{url:m.attachmentUrl,name:m.attachmentName,isMe}),
                       h("div",{className:"chat-ts"},
                         fmtTime(m.ts),
-                        showReceipt&&h("span",{className:"chat-receipt"+(isRead?" read":""),title:isRead?"Gelesen":"Gesendet"},isRead?"✓✓":"✓")
+                        showReceipt&&h("span",{className:"chat-receipt"+(isRead?" read":""),title:isRead?"Gelesen":"Gesendet"},isRead?"✓✓":"✓"),
+                        groupReadCount>0&&h("span",{className:"chat-receipt read",title:"Gelesen"},"✓✓ "+groupReadCount)
                       )
                     ),
                 !isEditing&&h("div",{className:"chat-msg-actions"},
@@ -294,6 +305,7 @@ function ChatView(){
   const[threads,setThreads]=S({});
   const[unread,setUnread]=S({});
   const[readUpTo,setReadUpTo]=S({}); // { peerId(string): lastReadId }
+  const[groupReaders,setGroupReaders]=S([]); // [{userId,lastReadId,userName}]
   const[typing,setTyping]=S({});     // { threadKey: {name, ts} }
   const[input,setInput]=S("");
   const[sending,setSending]=S(false);
@@ -303,6 +315,8 @@ function ChatView(){
   const[replyTarget,setReplyTarget]=S(null);
   const[searching,setSearching]=S(false);
   const[query,setQuery]=S("");
+  const[globalQuery,setGlobalQuery]=S("");
+  const[globalResults,setGlobalResults]=S([]);
   const fileInputRef=T(null);
   const lastTypingSent=T(0);
 
@@ -320,11 +334,26 @@ function ChatView(){
         if(threadId!==null){
           setUnread(prev=>({...prev,[String(threadId)]:0}));
           if(data.readUpTo!=null)setReadUpTo(prev=>({...prev,[String(threadId)]:Number(data.readUpTo)}));
+        }else{
+          setUnread(prev=>({...prev,group:0}));
+          if(data.groupReaders)setGroupReaders((data.groupReaders||[]).map(r=>({userId:Number(r.user_id||r.userId),lastReadId:Number(r.lastReadId||r.last_read_id||0),userName:r.user_name||r.userName||""})));
         }
       })
       .catch(()=>{})
       .finally(()=>setLoading(false));
   },[threadId]);
+
+  // Globale Suche (debounced) über alle Unterhaltungen.
+  v(()=>{
+    const qq=globalQuery.trim();
+    if(qq.length<2){setGlobalResults([]);return;}
+    const t=setTimeout(()=>{
+      window.ESG_API.fetch("/api/chat/search?q="+encodeURIComponent(qq))
+        .then(d=>setGlobalResults((d.results||[]).map(mapMsg)))
+        .catch(()=>{});
+    },280);
+    return()=>clearTimeout(t);
+  },[globalQuery]);
 
   // Typing-Hinweise nach 4 s automatisch ausblenden.
   v(()=>{
@@ -388,8 +417,13 @@ function ChatView(){
     function onRead(e){
       const d=e.detail&&(e.detail.message||e.detail);
       if(!d||d.reader==null)return;
-      // Mein Gesprächspartner (reader) hat meine DMs bis lastReadId gelesen.
-      setReadUpTo(prev=>({...prev,[String(Number(d.reader))]:Math.max(prev[String(Number(d.reader))]||0,Number(d.lastReadId||0))}));
+      const reader=Number(d.reader),lastReadId=Number(d.lastReadId||0);
+      if(reader===ME.id)return;
+      if(d.group){
+        setGroupReaders(prev=>{const i=prev.findIndex(r=>r.userId===reader);const name=(USERS||[]).find(u=>u.id===reader)?.name||"";if(i<0)return[...prev,{userId:reader,lastReadId,userName:name}];const n=[...prev];n[i]={...n[i],lastReadId:Math.max(n[i].lastReadId,lastReadId)};return n;});
+      }else{
+        setReadUpTo(prev=>({...prev,[String(reader)]:Math.max(prev[String(reader)]||0,lastReadId)}));
+      }
     }
     function onTyping(e){
       const d=e.detail&&(e.detail.message||e.detail);
@@ -553,26 +587,53 @@ function ChatView(){
         h("span",null,"Nachrichten"),
         totalUnread>0&&h("span",{className:"dm-badge dm-badge-total"},totalUnread)
       ),
-      h(ThreadItem,{
-        label:"Kollegium",sub:"Alle Kolleg:innen",
-        avatarEl:h("span",{className:"dm-group-icon"},h(Icon,{n:"users",size:18})),
-        active:threadId===null,unread:unread["group"]||0,onClick:()=>openThread(null),
-      }),
-      h("div",{className:"dm-sep"}),
-      h("div",{className:"dm-list-label"},"Direktnachrichten"),
-      colleagues.map(u=>h(ThreadItem,{
-        key:u.id,label:u.name,sub:u.email||"",
-        avatarEl:h(Avatar,{userId:u.id,size:"sm"}),
-        active:threadId===u.id,unread:unread[String(u.id)]||0,
-        onClick:()=>openThread(u.id),
-      }))
+      h("div",{className:"dm-search"},
+        h(Icon,{n:"search",size:15}),
+        h("input",{placeholder:"Alle Nachrichten durchsuchen…",value:globalQuery,onChange:e=>setGlobalQuery(e.target.value)}),
+        globalQuery&&h("button",{className:"dm-search-x",onClick:()=>setGlobalQuery("")},"×")
+      ),
+      globalQuery.trim().length>=2
+        ?h("div",{className:"dm-results"},
+            globalResults.length===0
+              ?h("div",{className:"dm-results-empty"},"Keine Treffer")
+              :globalResults.map(r=>{
+                  const target=r.recipientId===null?null:(r.userId===ME.id?r.recipientId:r.userId);
+                  const label=r.recipientId===null?"Kollegium":(target===r.userId?(r.userName||"?"):"DM");
+                  return h("button",{key:r.id,className:"dm-result",onClick:()=>{openThread(target);setGlobalQuery("");}},
+                    h("div",{className:"dm-result-head"},
+                      r.recipientId===null?h(Icon,{n:"users",size:13}):h(Avatar,{userId:r.userId,size:"xs"}),
+                      h("span",{className:"dm-result-label"},label),
+                      h("span",{className:"dm-result-time"},fmtDate(r.ts))
+                    ),
+                    h("div",{className:"dm-result-text"},highlightText(r.content,globalQuery.trim()))
+                  );
+                })
+          )
+        :h(FR,null,
+            h(ThreadItem,{
+              label:"Kollegium",sub:"Alle Kolleg:innen",
+              avatarEl:h("span",{className:"dm-group-icon"},h(Icon,{n:"users",size:18})),
+              active:threadId===null,unread:unread["group"]||0,onClick:()=>openThread(null),
+            }),
+            h("div",{className:"dm-sep"}),
+            h("div",{className:"dm-list-label"},"Direktnachrichten"),
+            colleagues.map(u=>h(ThreadItem,{
+              key:u.id,label:u.name,sub:u.email||"",
+              avatarEl:h(Avatar,{userId:u.id,size:"sm"}),
+              active:threadId===u.id,unread:unread[String(u.id)]||0,
+              onClick:()=>openThread(u.id),
+            }))
+          )
     ),
     h("div",{className:"dm-pane"+(mobilePane==="list"?" mobile-hidden":"")},
       h("div",{className:"dm-pane-head"},
         h("button",{className:"dm-back-btn",onClick:()=>setMobilePane("list")},h(Icon,{n:"arrowLeft",size:16})),
         threadId===null
           ?h(FR,null,h("span",{className:"dm-group-icon sm"},h(Icon,{n:"users",size:15})),h("strong",null,"Chat"))
-          :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("strong",null,activeThread?.name||"")),
+          :h(FR,null,h(Avatar,{userId:threadId,size:"xs"}),h("div",{className:"dm-head-meta"},
+              h("strong",null,activeThread?.name||""),
+              activeThread?.lastSeenAt&&h("span",{className:"dm-lastseen"},lastSeenLabel(activeThread.lastSeenAt))
+            )),
         h("div",{className:"grow"}),
         searching&&h("input",{className:"chat-search-input",autoFocus:true,placeholder:"Suchen…",value:query,onChange:e=>setQuery(e.target.value)}),
         h("button",{className:"iconbtn chat-search-btn"+(searching?" on":""),title:"In Unterhaltung suchen",onClick:()=>{const n=!searching;setSearching(n);if(!n)setQuery("");}},
@@ -580,7 +641,7 @@ function ChatView(){
         threadId!==null&&h("button",{className:"iconbtn chat-call-btn",title:"Videoanruf starten",onClick:()=>window.startCall&&window.startCall(threadId)},
           h(Icon,{n:"video",size:17}))
       ),
-      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null),query:searching?query:"",onPin:pinMsg})
+      h(MessagePane,{ME,USERS,threadId,messages:msgs,loading,sending,input,setInput:onInput,onSend:send,placeholder,pendingFile,onFileSelect,onClearFile,fileInputRef,onEditMsg:editMsg,onDeleteMsg:deleteMsg,onReact:reactMsg,readUpTo:threadReadUpTo,typingName,onSendVoice:sendVoice,onReply:setReplyTarget,replyTarget,onCancelReply:()=>setReplyTarget(null),query:searching?query:"",onPin:pinMsg,groupReaders})
     )
   );
 }

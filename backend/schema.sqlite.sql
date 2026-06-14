@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   must_change_password INTEGER NOT NULL DEFAULT 0,
   name                 TEXT,
   avatar_url           TEXT,
+  last_seen_at         TEXT,
   created_at           TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at           TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -248,6 +249,13 @@ CREATE TABLE IF NOT EXISTS chat_reads (
   last_read_id INTEGER NOT NULL DEFAULT 0,
   updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (user_id, peer_id)
+);
+
+-- Lesestand im Gruppenchat (kein peer_id, daher eigene Tabelle)
+CREATE TABLE IF NOT EXISTS chat_group_reads (
+  user_id      INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  last_read_id INTEGER NOT NULL DEFAULT 0,
+  updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Emoji-Reaktionen auf Chat-Nachrichten

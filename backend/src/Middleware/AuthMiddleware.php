@@ -39,5 +39,8 @@ final class AuthMiddleware
         }
 
         $request->user = $user;
+
+        // „Zuletzt online" gedrosselt aktualisieren (für Präsenz/Last-Seen).
+        User::touchLastSeen($userId);
     }
 }

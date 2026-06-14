@@ -13,7 +13,8 @@ offline-fähig, mit System-Benachrichtigungen.
 |---------|-------------|
 | **Aufgaben** | CRUD, Prioritäten, Fälligkeit, Zuweisungen, Teams, Listen-/Board-Ansicht, Audit-Trail, Share-Links |
 | **Notizen & Planungen** | Apuntes/Unterrichtsplanungen erstellen, privat halten oder mit einem Team teilen; Live-Sync bei allen Kolleg:innen |
-| **Kollegiumschat** | Echtzeit-Gruppen-Chat für alle Lehrkräfte — Nachrichten persistent in DB, WS-Push via `broadcast`-Channel |
+| **Chat (premium)** | Gruppen- **und** Direktnachrichten in Echtzeit. Datei-/Sprachnachrichten, Bearbeiten/Löschen, „schreibt…", Lesebestätigungen (DM ✓✓ und Gruppe „gelesen von N"), Emoji-Reaktionen, @Erwähnungen (mit Push), Antworten/Zitieren, Suche (im Thread + global), angepinnte Nachrichten, „zuletzt aktiv". Details: `ROADMAP-CHAT.md` |
+| **📹 Videoanruf** | 1:1 Video/Audio per **WebRTC** (P2P-Medien, STUN). Signalisierung über die WS-Brücke; Anruf-Overlay mit Bild-in-Bild und Steuerung |
 | **Markdown-Checklisten** | `- [ ] offen` / `- [x] erledigt` direkt in Notizen; Checkboxen sind in der Kartenansicht klickbar, Fortschritt (`✓ 2/5`) wird angezeigt |
 | **News-Button** | Roter ⚡-Button in der Topbar: Schnellnotiz/Checkliste von überall anlegen |
 | **Echtzeit** | WebSocket-Server pusht `task:*` und `note:*`-Events an alle Beteiligten (Auto-Reconnect) |

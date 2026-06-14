@@ -98,6 +98,7 @@ return (static function (): Router {
     $r->post('/api/notifications/read-all',[NotificationController::class, 'markAllRead'], ['auth' => true]);
 
     // --- Chat ----------------------------------------------------------------
+    $r->get('/api/chat/search',  [ChatController::class, 'search'],     ['auth' => true]);
     $r->get('/api/chat',         [ChatController::class, 'index'],      ['auth' => true]);
     $r->post('/api/chat',        [ChatController::class, 'store'],      ['auth' => true]);
     $r->post('/api/chat/upload', [ChatController::class, 'uploadFile'], ['auth' => true]);

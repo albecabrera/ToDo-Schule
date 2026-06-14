@@ -336,6 +336,7 @@ function mapUser(u){
     email:       u.email || "",
     presence:    "online",
     avatarUrl:   u.avatar_url ? (API_BASE_URL + u.avatar_url) : null,
+    lastSeenAt:  u.last_seen_at || null,
   };
 }
 

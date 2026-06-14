@@ -12,7 +12,16 @@ namespace App\Models;
 final class User extends Model
 {
     /** Öffentliche Felder (ohne password_hash). */
-    private const PUBLIC_COLS = 'id, email, abbreviation, must_change_password, name, avatar_url, created_at, updated_at';
+    private const PUBLIC_COLS = 'id, email, abbreviation, must_change_password, name, avatar_url, last_seen_at, created_at, updated_at';
+
+    /** Aktualisiert „zuletzt gesehen" — gedrosselt (höchstens minütlich). */
+    public static function touchLastSeen(int $id): void
+    {
+        self::db()->prepare(
+            "UPDATE users SET last_seen_at = datetime('now')
+             WHERE id = :id AND (last_seen_at IS NULL OR last_seen_at < datetime('now','-60 seconds'))"
+        )->execute([':id' => $id]);
+    }
 
     public static function create(string $email, string $password, ?string $name = null): array
     {

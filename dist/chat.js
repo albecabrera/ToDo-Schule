@@ -433,6 +433,8 @@ function ChatView(){
       const name=(u&&(u.name||"").split(" ")[0])||"Jemand";
       setTyping(prev=>({...prev,[tKey]:{name,ts:Date.now()}}));
     }
+    function onSynced(){setThreads(prev=>{const next={...prev};for(const k of Object.keys(next))next[k]=next[k].filter(x=>x.id>0);return next;});}
+    window.addEventListener("esg:offline-synced",onSynced);
     window.addEventListener("esg:chat",onChat);
     window.addEventListener("esg:chat:updated",onUpdated);
     window.addEventListener("esg:chat:deleted",onDeleted);
@@ -448,6 +450,7 @@ function ChatView(){
       window.removeEventListener("esg:chat:pinned",onPinned);
       window.removeEventListener("esg:chat:read",onRead);
       window.removeEventListener("esg:chat:typing",onTyping);
+      window.removeEventListener("esg:offline-synced",onSynced);
     };
   },[threadId,ME.id]);
 

@@ -269,3 +269,30 @@
 }
 .sb-icoopt:hover{background:var(--surface-3)}
 .sb-icoopt.on{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ── Offline-First Status-Banner ──────────────────────────────────────── */
+.offline-banner{
+  position:fixed; left:50%; bottom:18px; transform:translate(-50%,160%);
+  z-index:9600; max-width:92vw;
+  padding:9px 16px; border-radius:999px;
+  font-size:13px; font-weight:650; color:#fff;
+  display:flex; align-items:center; gap:8px;
+  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  backdrop-filter:blur(12px) saturate(160%);
+  transition:transform .35s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+}
+.offline-banner.show{ transform:translate(-50%,0); }
+.offline-banner.off{ background:rgba(50,48,80,.92); }
+.offline-banner.sync{ background:color-mix(in srgb,var(--accent) 88%,#000 0%); }
+.offline-banner.sync::before{
+  content:""; width:11px; height:11px; border-radius:50%;
+  border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+  animation:spin .8s linear infinite;
+}
+.offline-banner.off::before{
+  content:""; width:9px; height:9px; border-radius:50%; background:#ff7385;
+  animation:ob-pulse 1.4s infinite;
+}
+
+@keyframes ob-pulse{0%,100%{opacity:1}50%{opacity:.3}}

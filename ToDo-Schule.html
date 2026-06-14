@@ -35,6 +35,8 @@
 
   <!-- Runtime-Konfiguration: API-/WS-Adressen (lokal vs. Server, ohne Build) -->
   <script src="app/config.js"></script>
+  <!-- Offline-First: Outbox + Auto-Sync (vor dem Bundle, patcht apiFetch-Verhalten) -->
+  <script defer src="dist/offline.js"></script>
 
   <!-- HEIC → JPEG converter (client-side, Apple format support) -->
   <script defer src="vendor/heic2any.min.js"></script>

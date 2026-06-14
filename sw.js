@@ -2,13 +2,14 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v17";
+const CACHE = "esg-todo-v18";
 
 const PRECACHE = [
   "./",
   "./ToDo-Schule.html",
   "./manifest.webmanifest",
   "./app/config.js",
+  "./dist/offline.js",
   "./dist/app.min.js",
   "./dist/chat.js",
   "./dist/call.js",
@@ -108,6 +109,17 @@ self.addEventListener("fetch", (event) => {
       return cached || network;
     })
   );
+});
+
+/* ── Background Sync: Outbox nachsenden, sobald wieder online ─────────── */
+self.addEventListener("sync", (event) => {
+  if (event.tag === "esg-outbox") {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true }).then((cs) => {
+        cs.forEach((c) => c.postMessage("esg-flush"));
+      })
+    );
+  }
 });
 
 /* ── Push-Notifications ─────────────────────────────────────────────── */

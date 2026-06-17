@@ -725,6 +725,8 @@ function KlasselisteScreen() {
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState(null); // null|"create"|"edit"|"delete"|"share"|"sendchat"
   const [inlineCol, setInlineCol]     = useState(null);
+  const [dragColId, setDragColId]     = useState(null);
+  const [dragOverId, setDragOverId]   = useState(null);
   const [showPending, setShowPending]     = useState(false);
   const [activeUsers, setActiveUsers]     = useState([]);
   const [studentPanel, setStudentPanel]   = useState(null); // student name or null
@@ -909,6 +911,17 @@ function KlasselisteScreen() {
     updateLocal({ columns }); patchRemote({ columns });
   }
 
+  function moveColumn(fromId, toId) {
+    if (!activeList || fromId === toId) return;
+    const cols = [...(activeList.columns || [])];
+    const fromIdx = cols.findIndex(c => c.id === fromId);
+    const toIdx   = cols.findIndex(c => c.id === toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = cols.splice(fromIdx, 1);
+    cols.splice(toIdx, 0, moved);
+    updateLocal({ columns: cols }); patchRemote({ columns: cols });
+  }
+
   async function finishInlineRename() {
     if (!inlineCol || !activeList) { setInlineCol(null); return; }
     const columns = (activeList.columns||[]).map(c =>
@@ -1021,8 +1034,18 @@ function KlasselisteScreen() {
           h("thead", null,
             h("tr", null,
               h("th", { className: "kl-th kl-th-name" }, "Name"),
-              cols.map(col => h("th", { key: col.id, className: "kl-th" },
+              cols.map(col => h("th", {
+                key: col.id,
+                className: `kl-th${dragOverId === col.id ? " kl-th-drag-over" : ""}${dragColId === col.id ? " kl-th-dragging" : ""}`,
+                draggable: true,
+                onDragStart: e => { e.dataTransfer.effectAllowed = "move"; setDragColId(col.id); },
+                onDragOver:  e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverId(col.id); },
+                onDragLeave: () => setDragOverId(null),
+                onDrop:      e => { e.preventDefault(); moveColumn(dragColId, col.id); setDragColId(null); setDragOverId(null); },
+                onDragEnd:   () => { setDragColId(null); setDragOverId(null); },
+              },
                 h("div", { className: "kl-th-inner" },
+                  h("span", { className: "kl-col-drag-handle", title: "Spalte verschieben" }, "⠿"),
                   col.type === "grade" && h("span", { className: "kl-col-type-badge" }, TYPE_ICON[col.type]),
                   inlineCol && inlineCol.id === col.id
                     ? h("input", {

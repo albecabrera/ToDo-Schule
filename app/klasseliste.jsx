@@ -32,6 +32,30 @@ function toast(title, body) {
   if (window._addToast) window._addToast()({ title, body });
 }
 
+function triggerConfetti(colTitle) {
+  const overlay = document.createElement("div");
+  overlay.className = "kl-confetti-overlay";
+  const colors = ["#4f46e5","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
+  for (let i = 0; i < 70; i++) {
+    const dot = document.createElement("div");
+    dot.className = "kl-confetti-dot";
+    const size = 6 + Math.random() * 8;
+    dot.style.cssText = [
+      `left:${Math.random()*100}%`,
+      `background:${colors[Math.floor(Math.random()*colors.length)]}`,
+      `animation-delay:${(Math.random()*0.9).toFixed(2)}s`,
+      `animation-duration:${(1.4+Math.random()*0.8).toFixed(2)}s`,
+      `width:${size.toFixed(0)}px`,
+      `height:${size.toFixed(0)}px`,
+      `border-radius:${Math.random()>0.4?"50%":"3px"}`,
+    ].join(";");
+    overlay.appendChild(dot);
+  }
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 3500);
+  toast("🎉 Alle abgegeben!", colTitle ? `Spalte "${colTitle}" ist vollständig ausgefüllt!` : "Alle Schüler·innen haben abgegeben!");
+}
+
 function fmtDate(iso) {
   if (!iso) return "";
   try { return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" }); }
@@ -524,13 +548,53 @@ function ShareMenu({ list, onClose, onOpenChatModal }) {
 
 // ── KlasselisteScreen ─────────────────────────────────────────────────────────
 function KlasselisteScreen() {
-  const [lists, setLists]         = useState([]);
-  const [activeId, setActiveId]   = useState(null);
-  const [loading, setLoading]     = useState(true);
-  const [modal, setModal]         = useState(null); // null|"create"|"edit"|"delete"|"share"|"sendchat"
-  const [inlineCol, setInlineCol] = useState(null);
+  const [lists, setLists]             = useState([]);
+  const [activeId, setActiveId]       = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [modal, setModal]             = useState(null); // null|"create"|"edit"|"delete"|"share"|"sendchat"
+  const [inlineCol, setInlineCol]     = useState(null);
+  const [showPending, setShowPending] = useState(false);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const presenceRef                   = useRef({});
+  const myUserIdRef                   = useRef(null);
 
   useEffect(() => { loadLists(); }, []);
+
+  // Feature 1: Presencia en tiempo real
+  useEffect(() => {
+    apiFetch("/api/users/me").then(r => {
+      myUserIdRef.current = r?.user?.id ?? null;
+    }).catch(() => {});
+
+    function sendPresence() {
+      apiFetch("/api/klasselisten/presence", { method: "POST" }).catch(() => {});
+    }
+    sendPresence();
+    const heartbeat = setInterval(sendPresence, 30000);
+
+    function onPresence(e) {
+      const { userId, name } = e.detail || {};
+      if (!userId || userId === myUserIdRef.current) return;
+      presenceRef.current[userId] = { name, ts: Date.now() };
+      updateActiveUsers();
+    }
+    function updateActiveUsers() {
+      const now = Date.now();
+      setActiveUsers(
+        Object.values(presenceRef.current)
+          .filter(p => now - p.ts < 90000)
+          .map(p => p.name)
+      );
+    }
+    const cleanup = setInterval(updateActiveUsers, 20000);
+
+    window.addEventListener("esg:klasseliste:presence", onPresence);
+    return () => {
+      clearInterval(heartbeat);
+      clearInterval(cleanup);
+      window.removeEventListener("esg:klasseliste:presence", onPresence);
+    };
+  }, []);
 
   // Echtzeit-Sync: WS-Broadcast von anderen Nutzern
   useEffect(() => {
@@ -604,8 +668,13 @@ function KlasselisteScreen() {
   async function toggleCheck(si, colId) {
     if (!activeList) return;
     const key = `${si}:${colId}`;
+    const col = (activeList.columns || []).find(c => c.id === colId);
+    const wasComplete = col?.type !== "date" && (activeList.students || []).every((_, i) => !!(activeList.checks || {})[`${i}:${colId}`]);
     const checks = { ...(activeList.checks || {}), [key]: !activeList.checks?.[key] };
+    const isComplete = col?.type !== "date" && (activeList.students || []).length > 0 &&
+      (activeList.students || []).every((_, i) => !!checks[`${i}:${colId}`]);
     updateLocal({ checks });
+    if (!wasComplete && isComplete) triggerConfetti(col?.title);
     try {
       await apiFetch(`/api/klasselisten/${activeId}`, { method: "PATCH", body: JSON.stringify({ checks }) });
     } catch(e) { updateLocal({ checks: activeList.checks }); }
@@ -696,7 +765,23 @@ function KlasselisteScreen() {
   const students = activeList.students || [];
   const checks   = activeList.checks   || {};
 
+  // Feature 5: Pendientes filter
+  const visibleStudents = showPending
+    ? students.filter((_, si) => cols.some(col => {
+        const v = checks[`${si}:${col.id}`];
+        return col.type === "date" ? !(v && typeof v === "string") : !v;
+      }))
+    : students;
+
   return h("div", { className: "kl-screen" },
+
+    // ── Presence bar ────────────────────────────────────────────────────────
+    activeUsers.length > 0 && h("div", { className: "kl-presence-bar" },
+      h("span", { className: "kl-presence-dot" }),
+      activeUsers.length === 1
+        ? `${activeUsers[0]} ist gerade aktiv`
+        : `${activeUsers.join(", ")} sind gerade aktiv`
+    ),
 
     // ── Header ──────────────────────────────────────────────────────────────
     h("div", { className: "kl-header" },
@@ -709,8 +794,13 @@ function KlasselisteScreen() {
         h("button", { className: "kl-tab kl-tab-new", onClick: () => setModal("create"), title: "Neue Liste" }, "+")
       ),
       h("div", { className: "kl-header-row" },
-        h("span", { className: "kl-student-count" }, `${students.length} Schüler·innen`),
+        h("span", { className: "kl-student-count" }, `${visibleStudents.length} von ${students.length} Schüler·innen`),
         h("div", { className: "kl-action-group" },
+          h("button", {
+            className: `btn btn-soft btn-sm${showPending ? " kl-filter-active" : ""}`,
+            onClick: () => setShowPending(p => !p),
+            title: showPending ? "Alle anzeigen" : "Nur Ausstehende anzeigen",
+          }, showPending ? "⚠️ Fehlend" : "⚠️ Fehlend"),
           h("button", { className: "btn btn-soft btn-sm", onClick: () => setModal("edit") }, "✏️ Bearbeiten"),
           h("div", { className: "kl-share-wrap" },
             h("button", {
@@ -790,31 +880,34 @@ function KlasselisteScreen() {
             )
           ),
           h("tbody", null,
-            students.map((name, si) => h("tr", { key: si, className: "kl-row" },
-              h("td", { className: "kl-td kl-td-name" }, name),
-              cols.map(col => {
-                const key = `${si}:${col.id}`;
-                if (col.type === "date") {
-                  const val = typeof checks[key] === "string" ? checks[key] : "";
+            visibleStudents.map((name) => {
+              const si = students.indexOf(name);
+              return h("tr", { key: si, className: "kl-row" },
+                h("td", { className: "kl-td kl-td-name" }, name),
+                cols.map(col => {
+                  const key = `${si}:${col.id}`;
+                  if (col.type === "date") {
+                    const val = typeof checks[key] === "string" ? checks[key] : "";
+                    return h("td", { key: col.id, className: "kl-td kl-td-check" },
+                      h("input", {
+                        type: "date",
+                        className: `kl-date-input${val ? " has-value" : ""}`,
+                        value: val,
+                        onChange: e => setDateValue(si, col.id, e.target.value),
+                      })
+                    );
+                  }
+                  const checked = !!checks[key];
                   return h("td", { key: col.id, className: "kl-td kl-td-check" },
-                    h("input", {
-                      type: "date",
-                      className: `kl-date-input${val ? " has-value" : ""}`,
-                      value: val,
-                      onChange: e => setDateValue(si, col.id, e.target.value),
-                    })
+                    h("label", { className: `kl-checkbox${checked ? " checked" : ""}` },
+                      h("input", { type: "checkbox", checked, onChange: () => toggleCheck(si, col.id) }),
+                      h("span", { className: "kl-checkmark" }, checked ? "✓" : "")
+                    )
                   );
-                }
-                const checked = !!checks[key];
-                return h("td", { key: col.id, className: "kl-td kl-td-check" },
-                  h("label", { className: `kl-checkbox${checked ? " checked" : ""}` },
-                    h("input", { type: "checkbox", checked, onChange: () => toggleCheck(si, col.id) }),
-                    h("span", { className: "kl-checkmark" }, checked ? "✓" : "")
-                  )
-                );
-              }),
-              h("td", null)
-            ))
+                }),
+                h("td", null)
+              );
+            })
           )
         )
       )

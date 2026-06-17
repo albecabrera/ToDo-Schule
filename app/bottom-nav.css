@@ -1,0 +1,77 @@
+/* ============================================================================
+   Bottom Navigation Bar — mobile only (≤ 768px)
+   ============================================================================ */
+
+.bn-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bn-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    background: var(--bg, #fff);
+    border-top: 1px solid var(--border, #e2e8f0);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 24px rgba(0,0,0,.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-3, #94a3b8);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    transition: color .15s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .bn-item.on {
+    color: #4f46e5;
+  }
+
+  .bn-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform .15s;
+  }
+
+  .bn-item.on .bn-icon {
+    transform: translateY(-1px);
+  }
+
+  .bn-badge {
+    position: absolute;
+    top: 6px; right: calc(50% - 16px);
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    padding: 0 4px;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+
+  /* push content up so it's not hidden behind bottom bar */
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+  /* hide sidebar on mobile when bottom nav is visible */
+  .sidebar { display: none !important; }
+}

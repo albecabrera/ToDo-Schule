@@ -2,7 +2,7 @@
 //  ToDo-Schule — Service Worker (Offline-Cache + Push-Notifications)
 // ========================================================================
 
-const CACHE = "esg-todo-v26";
+const CACHE = "esg-todo-v27";
 
 const PRECACHE = [
   "./",
@@ -17,6 +17,8 @@ const PRECACHE = [
   "./dist/search.js",
   "./dist/activity.js",
   "./dist/admin.js",
+  "./dist/klasseliste.js",
+  "./dist/bottom-nav.js",
   "./dist/install.js",
   "./app/call.css",
   "./app/search.css",
@@ -33,6 +35,8 @@ const PRECACHE = [
   "./app/responsive.css",
   "./app/notes.css",
   "./app/chat.css",
+  "./app/klasseliste.css",
+  "./app/bottom-nav.css",
   "./app/liquid-glass.css",
   "./assets/esg-mark.svg",
   "./assets/esg-mark-ondark.svg",
@@ -67,6 +71,22 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   const isFont = url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
+
+  // Klasseliste GET: network-first mit Offline-Fallback (kooperative Daten).
+  if (url.pathname.startsWith("/api/klasselisten") && event.request.method === "GET") {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(event.request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   // REST-API & andere Origins nie cachen (Echtzeit-Daten).
   if (url.pathname.startsWith("/api/")) return;

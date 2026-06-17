@@ -489,3 +489,46 @@
   .kl-checkmark { font-size: 15px; }
   .kl-date-input { min-width: 90px; font-size: 11px; padding: 4px 5px; }
 }
+
+/* ── Presencia en tiempo real ──────────────────────────────────────────── */
+.kl-presence-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 20px; font-size: 12px; font-weight: 500;
+  color: #16a34a;
+  background: linear-gradient(90deg, rgba(22,163,74,.08), transparent);
+  border-bottom: 1px solid rgba(22,163,74,.15);
+}
+.kl-presence-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22,163,74,.4);
+  animation: kl-pulse 2s infinite;
+}
+@keyframes kl-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(22,163,74,.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+
+/* ── Filtro "Fehlend" activo ───────────────────────────────────────────── */
+.kl-filter-active {
+  background: rgba(245,158,11,.15) !important;
+  color: #b45309 !important;
+  border-color: rgba(245,158,11,.4) !important;
+}
+
+/* ── Confetti ──────────────────────────────────────────────────────────── */
+.kl-confetti-overlay {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9999;
+  overflow: hidden;
+}
+.kl-confetti-dot {
+  position: absolute; top: -20px;
+  animation: kl-confetti-fall linear forwards;
+}
+@keyframes kl-confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(760deg) scale(0.6); opacity: 0; }
+}

@@ -25,7 +25,10 @@ mit Push-Benachrichtigungen und Echtzeit-Präsenz.
 ### Klasseliste (Kooperativ)
 | Feature | Details |
 |---------|---------|
-| **Checkliste** | Schülerliste mit ✓/Datum-Spalten, inline umbenennen, Spalten hinzufügen/entfernen |
+| **Checkliste** | Schülerliste mit ✓/📅/🔢-Spalten, inline umbenennen, Spalten hinzufügen/entfernen |
+| **Spaltentypen** | ✓ Checkbox · 📅 Datum · 🔢 Note (1-6 mit Farbkodierung grün/gelb/rot + Klassendurchschnitt) |
+| **Schüler·in-Profil** | Click auf Namen → Seitenpanel mit Fortschritt quer über alle Listen |
+| **Elternkontakt-Log** | Im Profil-Panel: Kontakthistorie pro Schüler·in (📞 E-Mail Persönlich Schriftlich + Notiz) |
 | **Echtzeit-Sync** | Änderungen von Alberto oder Loana erscheinen sofort bei beiden (WS-Broadcast) |
 | **Presencia** | Grüner Pulsindikator „Loana ist gerade aktiv" wenn Kollege die Liste geöffnet hat |
 | **Filtro Fehlend** | Zeigt nur Schüler·innen mit mindestens einer offenen Spalte |
@@ -35,6 +38,13 @@ mit Push-Benachrichtigungen und Echtzeit-Präsenz.
 | **Export** | PDF drucken, Word (.doc), per Chat teilen (mit Spaltenauswahl + Empfänger), per E-Mail |
 | **Chat-Anhang** | HTML-Anhang öffnet sich als interaktive Liste im Browser |
 | **Wöchentlicher Digest** | PHP-Cron schickt jeden Montag 08:00 HTML-E-Mail mit Fortschrittsübersicht |
+
+### Klassenbuch & Kalender
+| Feature | Details |
+|---------|---------|
+| **Klassenbuch 📖** | Digitales Klassentagebuch: Datum, Thema, Inhalt, Absenzen (Checkboxen aus Schülerliste), Notizen |
+| **Kalender 📅** | Monatliche Kalenderansicht aller Aufgaben; farbige Punkte (rot=überfällig, grün=erledigt); Click → Tagesübersicht |
+| **Benachrichtigungen 🔔** | Vollständiges Benachrichtigungszentrum mit Verlauf, Filter Alle/Ungelesen, Auto-Refresh 60 s |
 
 ### Kommunikation
 | Feature | Details |
@@ -122,12 +132,15 @@ rsync -a --exclude='.git' --exclude='node_modules' . /pfad/zu/xampp-data/htdocs/
 ToDo-Schule/
 ├── ToDo-Schule.html          # Einstiegspunkt (React prod + Bundle, kein Babel)
 ├── manifest.webmanifest      # PWA-Manifest
-├── sw.js                     # Service Worker (Cache v27 + Push + Offline-Klasseliste)
+├── sw.js                     # Service Worker (Cache v28 + Push + Offline-Klasseliste)
 ├── start.sh                  # Schnellstart: API + WS zusammen starten
 ├── dist/
 │   ├── app.min.js            # Haupt-Bundle (Shell, Tasks, Notes, Login…)
 │   ├── chat.js               # Chat-Modul
-│   ├── klasseliste.js        # Klasseliste-Modul  ← kooperative Checkliste
+│   ├── klasseliste.js        # Klasseliste-Modul  ← Checkliste + Notensp. + Profil
+│   ├── calendar.js           # Kalender-Modul (Monatsansicht + Aufgaben-Dots)
+│   ├── klassenbuch.js        # Klassenbuch-Modul (Tagerbuch + Absenzen)
+│   ├── notifications-center.js # Benachrichtigungszentrum
 │   ├── bottom-nav.js         # Mobile Bottom Navigation
 │   ├── offline.js            # Offline-Outbox (IndexedDB + Background Sync)
 │   └── *.js                  # Weitere Module (palette, search, activity, admin…)
@@ -136,15 +149,19 @@ ToDo-Schule/
 │   ├── data.js               # ESG_API (REST-Client, Auth, Token-Verwaltung)
 │   ├── app.jsx               # Root: State, WS, Begrüßung, SW-Registrierung
 │   ├── shell.jsx             # Sidebar + Topbar + Profil + Abmelden
-│   ├── klasseliste.jsx       # Klasseliste: Checkboxen, Datum, Präsenz, Konfetti
+│   ├── klasseliste.jsx       # Klasseliste: Checkboxen, Datum, Note, Profil, Konfetti
+│   ├── calendar.jsx          # Kalender-Monatsansicht
+│   ├── klassenbuch.jsx       # Digitales Klassenbuch
+│   ├── notifications-center.jsx # Benachrichtigungszentrum
 │   ├── bottom-nav.jsx        # Bottom Navigation Bar (Mobil)
 │   ├── chat.jsx              # Chat-Modul
 │   └── *.css / *.jsx         # Weitere Module und Stile
 ├── backend/
 │   ├── database.sqlite       # SQLite-DB (gitignored, lokal vorhanden)
 │   ├── src/
-│   │   ├── Controllers/      # KlasselisteController, ChatController, AuthController…
-│   │   ├── Models/           # Klasse, User, ChatMessage, PushSubscription…
+│   │   ├── Controllers/      # KlasselisteController, ElternkontaktController,
+│   │   │                     # KlassenbuchController, ChatController, AuthController…
+│   │   ├── Models/           # Klasse, Elternkontakt, KlassenbuchEntry, User…
 │   │   ├── Lib/              # Emitter (WS-Brücke + Push), WebPush (VAPID), JWT…
 │   │   └── Routes/api.php    # Alle REST-Routen
 │   ├── bin/
@@ -170,8 +187,15 @@ ToDo-Schule/
 | GET/POST | `/api/chat` | Chatverlauf / Nachricht senden |
 | POST | `/api/chat/upload` | Datei-Anhang hochladen |
 | GET/POST | `/api/klasselisten` | Listen abrufen / erstellen |
-| PATCH | `/api/klasselisten/:id` | Checkboxen / Datum / Spalten aktualisieren |
+| PATCH | `/api/klasselisten/:id` | Checkboxen / Datum / Noten / Spalten aktualisieren |
 | POST | `/api/klasselisten/presence` | Präsenz-Heartbeat senden |
+| GET/POST | `/api/elternkontakte` | Elternkontakt-Einträge abrufen / erstellen |
+| DELETE | `/api/elternkontakte/:id` | Elternkontakt-Eintrag löschen |
+| GET/POST | `/api/klassenbuch` | Klassenbuch-Einträge abrufen / erstellen |
+| PATCH/DELETE | `/api/klassenbuch/:id` | Klassenbuch-Eintrag ändern / löschen |
+| GET | `/api/notifications` | Benachrichtigungen laden |
+| PATCH | `/api/notifications/:id` | Einzelne Benachrichtigung als gelesen markieren |
+| POST | `/api/notifications/read-all` | Alle als gelesen markieren |
 | GET | `/api/search?q=` | Globale Suche (Aufgaben + Notizen + Anhänge) |
 | GET | `/api/activity` | Aktivitäts-Feed (filterbar) |
 | WS | `ws://localhost:8090/?token=…` | Echtzeit: `task:*`, `chat:*`, `klasseliste:*`, `klasseliste:presence` |

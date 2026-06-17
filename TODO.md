@@ -32,7 +32,10 @@ Pendiente: infraestructura de servidor para producción pública con HTTPS.
 - [x] Live-sync vía WebSocket
 
 ### Klasseliste (Checkliste cooperativa) — nuevo
-- [x] Tabla de alumnos con columnas ✓/📅 configurables
+- [x] Tabla de alumnos con columnas ✓/📅/🔢 configurables
+- [x] **Spaltentypen**: ✓ Checkbox · 📅 Datum · 🔢 Note 1-6 con color (verde/ámbar/rojo) + promedio
+- [x] **Schüler·in-Profil** — click en nombre → panel lateral con progreso cross-list
+- [x] **Elternkontakt-Log** — historial de contactos de padres por alumno/a (📞 Email Persönlich Schriftlich + nota)
 - [x] Echtzeit-Sync entre Alberto y Loana (WS broadcast)
 - [x] **Presencia en tiempo real** — indicador pulsante „Loana ist gerade aktiv"
 - [x] **Filtro „Fehlend"** — solo muestra alumnos con entradas pendientes
@@ -48,6 +51,11 @@ Pendiente: infraestructura de servidor para producción pública con HTTPS.
 - [x] Adjunto HTML interactivo en el chat
 - [x] CRUD de listas (crear, editar, borrar)
 - [x] Crear usuario Loana Venedey (loana.venedey@esg.nrw.schule / lehrerinve)
+
+### Klassenbuch & Kalender — nuevo
+- [x] **Klassenbuch 📖** — cuaderno de clase digital: fecha, tema, contenido, ausencias (checkboxes desde Klasseliste), notas
+- [x] **Kalender 📅** — vista mensual de todas las tareas con puntos de color (rojo=vencido, verde=hecho); click en día → lista de tareas
+- [x] **Benachrichtigungen 🔔** — centro de notificaciones completo: filtro Todo/No leído, agrupar por día, Auto-Refresh 60 s, marcar leído/todo
 
 ### Chat
 - [x] Canal grupal + mensajes directos (DM)

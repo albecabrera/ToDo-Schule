@@ -65,9 +65,24 @@
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .kl-student-count {
-  font-size: 13px; color: var(--text-3); flex: 1;
+  font-size: 12px; color: var(--text-3); white-space: nowrap;
 }
 .kl-action-group { display: flex; align-items: center; gap: 6px; }
+
+/* Search input */
+.kl-search-wrap {
+  position: relative; display: flex; align-items: center; flex: 1; min-width: 140px; max-width: 260px;
+}
+.kl-search-icon {
+  position: absolute; left: 8px; font-size: 12px; pointer-events: none;
+}
+.kl-search-input {
+  width: 100%; padding: 5px 8px 5px 26px;
+  font-size: 13px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text-1); outline: none;
+  transition: border-color .15s;
+}
+.kl-search-input:focus { border-color: var(--accent); }
 
 /* Shared button helpers */
 .btn-soft {
@@ -282,6 +297,24 @@
 .kl-row:nth-child(even) .kl-td-name { background: color-mix(in srgb, var(--bg-2) 50%, var(--bg)); }
 .kl-row:hover td { background: color-mix(in srgb, var(--accent) 7%, var(--bg)) !important; }
 .kl-row:hover .kl-td-name { background: color-mix(in srgb, var(--accent) 7%, var(--bg)) !important; }
+
+/* Row done — all checks complete */
+.kl-row-done td { background: color-mix(in srgb, #22c55e 8%, var(--bg)) !important; }
+.kl-row-done .kl-td-name { background: color-mix(in srgb, #22c55e 12%, var(--bg)) !important; }
+.kl-row-done:hover td { background: color-mix(in srgb, #22c55e 14%, var(--bg)) !important; }
+
+/* Row all-toggle button */
+.kl-row-all-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: none;
+  font-size: 10px; cursor: pointer; margin-right: 6px;
+  color: var(--text-3); transition: all .15s; flex-shrink: 0;
+}
+.kl-row-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+.kl-row-all-btn.done {
+  background: #22c55e; border-color: #22c55e; color: #fff; font-weight: 700;
+}
 
 .kl-td {
   border-bottom: 1px solid var(--border);

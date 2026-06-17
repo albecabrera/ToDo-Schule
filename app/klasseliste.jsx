@@ -1,7 +1,7 @@
 // app/klasseliste.jsx — ToDo-Schule Klassenliste
 (function () {
 "use strict";
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 const h = React.createElement;
 
 const STUDENTS_5D = [
@@ -727,6 +727,8 @@ function KlasselisteScreen() {
   const [inlineCol, setInlineCol]     = useState(null);
   const [dragColId, setDragColId]     = useState(null);
   const [dragOverId, setDragOverId]   = useState(null);
+  const [studentSearch, setStudentSearch] = useState("");
+  const patchTimerRef = useRef(null);
   const [showPending, setShowPending]     = useState(false);
   const [activeUsers, setActiveUsers]     = useState([]);
   const [studentPanel, setStudentPanel]   = useState(null); // student name or null
@@ -829,6 +831,8 @@ function KlasselisteScreen() {
   }
 
   async function patchRemote(patch) {
+    if (patchTimerRef.current) clearTimeout(patchTimerRef.current);
+    patchTimerRef.current = setTimeout(async () => {
     try {
       const updated = await apiFetch(`/api/klasselisten/${activeId}`, {
         method: "PATCH", body: JSON.stringify(patch),
@@ -838,6 +842,7 @@ function KlasselisteScreen() {
         : l
       ));
     } catch(e) { console.error(e); }
+    }, 300);
   }
 
   async function toggleCheck(si, colId) {
@@ -911,6 +916,16 @@ function KlasselisteScreen() {
     updateLocal({ columns }); patchRemote({ columns });
   }
 
+  async function toggleRowAll(si) {
+    if (!activeList) return;
+    const checkCols = cols.filter(c => c.type === "check");
+    if (!checkCols.length) return;
+    const allDone = checkCols.every(c => !!checks[`${si}:${c.id}`]);
+    const next = { ...(activeList.checks || {}) };
+    checkCols.forEach(c => { next[`${si}:${c.id}`] = !allDone; });
+    updateLocal({ checks: next }); patchRemote({ checks: next });
+  }
+
   function moveColumn(fromId, toId) {
     if (!activeList || fromId === toId) return;
     const cols = [...(activeList.columns || [])];
@@ -970,13 +985,11 @@ function KlasselisteScreen() {
   const students = activeList.students || [];
   const checks   = activeList.checks   || {};
 
-  // Feature 5: Pendientes filter
-  const visibleStudents = showPending
-    ? students.filter((_, si) => cols.some(col => {
-        const v = checks[`${si}:${col.id}`];
-        return !v;
-      }))
-    : students;
+  const visibleStudents = students.filter((name, si) => {
+    if (studentSearch && !name.toLowerCase().includes(studentSearch.toLowerCase())) return false;
+    if (showPending && !cols.some(col => !checks[`${si}:${col.id}`])) return false;
+    return true;
+  });
 
   return h("div", { className: "kl-screen" },
 
@@ -999,7 +1012,16 @@ function KlasselisteScreen() {
         h("button", { className: "kl-tab kl-tab-new", onClick: () => setModal("create"), title: "Neue Liste" }, "+")
       ),
       h("div", { className: "kl-header-row" },
-        h("span", { className: "kl-student-count" }, `${visibleStudents.length} von ${students.length} Schüler·innen`),
+        h("div", { className: "kl-search-wrap" },
+          h("span", { className: "kl-search-icon" }, "🔍"),
+          h("input", {
+            className: "kl-search-input",
+            placeholder: "Schüler·in suchen…",
+            value: studentSearch,
+            onChange: e => setStudentSearch(e.target.value),
+          })
+        ),
+        h("span", { className: "kl-student-count" }, `${visibleStudents.length} / ${students.length}`),
         h("div", { className: "kl-action-group" },
           h("button", {
             className: `btn btn-soft btn-sm${showPending ? " kl-filter-active" : ""}`,
@@ -1110,12 +1132,21 @@ function KlasselisteScreen() {
           h("tbody", null,
             visibleStudents.map((name) => {
               const si = students.indexOf(name);
-              return h("tr", { key: si, className: "kl-row" },
+              const checkCols = cols.filter(c => c.type === "check");
+              const rowDone = checkCols.length > 0 && checkCols.every(c => !!checks[`${si}:${c.id}`]);
+              return h("tr", { key: si, className: `kl-row${rowDone ? " kl-row-done" : ""}` },
                 h("td", {
                   className: "kl-td kl-td-name kl-td-name-click",
                   onClick: () => setStudentPanel(p => p === name ? null : name),
                   title: "Schüler·in-Profil öffnen",
-                }, name),
+                },
+                  checkCols.length > 0 && h("button", {
+                    className: `kl-row-all-btn${rowDone ? " done" : ""}`,
+                    onClick: e => { e.stopPropagation(); toggleRowAll(si); },
+                    title: rowDone ? "Alle abwählen" : "Alle markieren",
+                  }, rowDone ? "✓" : "○"),
+                  name
+                ),
                 cols.map(col => {
                   const key = `${si}:${col.id}`;
                   if (col.type === "grade") {

@@ -1,73 +1,90 @@
-# 🚀 Roadmap — Mejoras premium de la app
+# 🚀 Roadmap — ToDo-Schule
 
-Propuestas para llevar ToDo-Schule al siguiente nivel, con foco en
-**funcionalidad, UX, persistencia y PWA**. Ordenadas por valor/esfuerzo.
-
-Estado del chat/llamadas: ver `ROADMAP-CHAT.md` (ya muy completo).
+Historial de mejoras y estado actual. Todos los ítems del roadmap original están implementados.
 
 ---
 
-## 🗄️ Persistencia + PWA
+## ✅ Persistencia + PWA
 
-### 1. Offline-first real (outbox + Background Sync) — ✅ HECHO
-La PWA cachea la app (abre sin red) pero hoy **no se puede crear/editar offline**.
-- Outbox en **IndexedDB**: encola escrituras (tareas/notas/chat) hechas sin red.
-- Replay automático al volver la conexión (evento `online` + **Background Sync**).
-- Reconciliación: recarga de datos tras sincronizar (la verdad del servidor reemplaza los temporales).
-- UI: banner "Sin conexión" + contador "N ausstehend".
-- Archivos: `dist/offline.js`, parches a `apiFetch`, `sw.js` (sync).
+### 1. Offline-first (Outbox + Background Sync) — ✅ HECHO
+- Outbox en IndexedDB: encola escrituras (tareas/notas/chat/klasseliste) hechas sin red
+- Replay automático al volver la conexión (evento `online` + Background Sync)
+- Klasseliste GET cacheado en SW (network-first + fallback)
+- Banner „Sin conexión" + contador de pendientes
 
-### 2. Backups automáticos de la SQLite — ✅ HECHO
-- `bin/backup.php`: copia `database.sqlite` con timestamp, retención configurable (`--keep=N` días).
-- Cron recomendado: `0 2 * * * php /ruta/bin/backup.php >> /var/log/esg-backup.log`
-- Backups en `storage/backups/` (gitignored).
+### 2. Backups automáticos SQLite — ✅ HECHO
+- `bin/backup.php`: copia `database.sqlite` con timestamp, retención configurable
+- Cron: `0 2 * * * php backend/bin/backup.php --keep=7`
 
 ---
 
-## ⚙️ Funcionalidad
+## ✅ Funcionalidad
 
-### 3. Tareas recurrentes (Wiederholung) — ✅ HECHO
-- Regla de repetición (semanal/mensual: conferencias, guardias, Elternsprechtag).
-- Columna `recurrence` + generación de la siguiente instancia al completar.
+### 3. Tareas recurrentes — ✅ HECHO
+- Columna `recurrence` + generación de la siguiente instancia al completar
 
-### 4. Exportar calendario (iCal / .ics) — ✅ HECHO
-- Endpoint que genera `.ics` con las tareas con fecha → suscribible en Google Calendar/Outlook del profe.
+### 4. Exportar calendario iCal — ✅ HECHO
+- Endpoint `.ics` suscribible en Google Calendar/Outlook/Apple Calendar
 
-### 5. Búsqueda global de la app — ✅ HECHO
-- `GET /api/search?q=` cruza tareas + notas + adjuntos (server-side, SQLite LIKE).
-- Frontend: modal overlay `GlobalSearch` (Liquid Glass), activado con Enter en el topbar (≥2 chars) o con `esg:open-search` event.
-- Resultados agrupados por tipo con iconos + subtítulo contextual.
+### 5. Búsqueda global — ✅ HECHO
+- `GET /api/search?q=` — tareas + notas + adjuntos (SQLite LIKE)
+- Modal overlay `GlobalSearch` activado desde topbar o `⌘K`
 
 ---
 
-## ⌨️ UX (buenas prácticas)
+## ✅ UX
 
 ### 6. Command Palette (⌘K) — ✅ HECHO
-- Buscador único para saltar a cualquier tarea, nota, colega o **acción** ("Neue Aufgabe", "Dunkelmodus", "Vollbild"). Hoy ⌘K solo enfoca el buscador.
+- Saltar a cualquier tarea, nota, colega o acción vía teclado
 
-### 7. Accesibilidad (a11y) + `prefers-reduced-motion` — ✅ HECHO
-- Foco visible, navegación por teclado en modales/drawer, roles ARIA, respeto a "reducir movimiento". En entornos públicos en Alemania es prácticamente exigible (BITV/WCAG).
+### 7. Accesibilidad (a11y) — ✅ HECHO
+- ARIA, foco visible, skip-link, `prefers-reduced-motion`, navegación por teclado en modales
 
-### 8. Botón "Instalar app" propio — ✅ HECHO
-- Capturar `beforeinstallprompt` y mostrar un botón visible → sube la adopción frente al prompt nativo.
+### 8. Botón „Instalar app" propio — ✅ HECHO
+- Captura `beforeinstallprompt` y muestra chip visible
 
 ---
 
-## 🔒 Robustez / cumplimiento (Alemania)
+## ✅ Robustez / Cumplimiento
 
 ### 9. DSGVO/GDPR — ✅ HECHO
-- `GET /api/users/me/export` → JSON con perfil, tareas, notas, comentarios, mensajes, adjuntos.
-- `DELETE /api/users/me` (body `{password}`) → borrado cascada + archivos físicos.
-- Frontend: sección "Datenschutz (DSGVO)" en el perfil modal con botones "Daten exportieren" y "Konto löschen".
+- `GET /api/users/me/export` → JSON completo
+- `DELETE /api/users/me` → borrado cascada + archivos físicos
 
-### 10. Auditoría/actividad ampliada — ✅ HECHO
-- `GET /api/activity?team_id=&user_id=&action=&limit=` — feed global filtrable.
-- Frontend: sección "Aktivität" en el sidebar, timeline con dot-line, diff-chips (antes → después), filtros por Bereich y Lehrkraft.
-- Live-update vía `esg:task-changed` event desde WS.
+### 10. Feed de Actividad — ✅ HECHO
+- Timeline global filtrable por área y usuario, live-update vía WS
 
 ---
 
-## Prioridad sugerida
-1. **Offline-first** (#1) — el mayor salto PWA, persistente. ← en curso
-2. **Command Palette** (#6) — UX premium, efecto inmediato.
-3. **Tareas recurrentes** (#3) — dolor concreto del día a día.
+## ✅ Klasseliste — Checkliste cooperativa (nueva sección)
+
+### 11. Klasseliste básica — ✅ HECHO
+- Tabla de 28 alumnos con columnas ✓/📅 configurables
+- CRUD completo (crear, editar, borrar lista)
+- Exportar PDF, Word, chat, email
+
+### 12. Sincronización en tiempo real — ✅ HECHO
+- WS broadcast `klasseliste:updated` → ambos usuarios ven cambios instantáneamente
+- Acceso compartido sin filtro por usuario
+
+### 13. 7 Mejoras premium (2026-06-17) — ✅ HECHO
+
+| # | Mejora | Implementación |
+|---|--------|---------------|
+| 1 | **Presencia en tiempo real** | Heartbeat POST cada 30s → WS broadcast `klasseliste:presence` → barra pulsante verde |
+| 2 | **Web Push para Klasseliste** | `KlasselisteController::pushToOthers()` emite `user:<id>` push a todos los demás |
+| 3 | **Bottom Navigation (móvil)** | `app/bottom-nav.jsx` → fija en `≤768px`, 4 ítems, oculta sidebar, `window.ESG_SS` |
+| 4 | **Resumen semanal por email** | `backend/cron/weekly-digest.php` — HTML email con barras de progreso por columna |
+| 5 | **Filtro „Fehlend"** | Toggle en header, filtra `visibleStudents` a los con al menos una casilla vacía |
+| 6 | **Offline Klasseliste** | GET cacheado en SW v27, `klasseliste.js` en PRECACHE |
+| 7 | **Konfetti al 100%** | Detección en `toggleCheck()` de `wasComplete → isComplete`, 70 partículas CSS |
+
+---
+
+## 💡 Ideas futuras
+
+- Videollamada grupal (3+ participantes)
+- Más clases en Klasseliste con gestión por año escolar
+- Exportar Klasseliste a PDF desde servidor (sin diálogo de impresión)
+- Historial de cambios por fila en la Klasseliste
+- App nativa (Capacitor) para push más fiable en iOS

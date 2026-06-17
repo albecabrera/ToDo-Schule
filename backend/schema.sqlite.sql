@@ -302,3 +302,14 @@ CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
 
 -- Schemaänderung: is_admin für Benutzerverwaltung
 ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;
+-- Klassenliste (Checkliste für Klassen)
+CREATE TABLE IF NOT EXISTS klasselisten (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL,
+  name          TEXT    NOT NULL,
+  columns_json  TEXT    NOT NULL DEFAULT '[]',
+  students_json TEXT    NOT NULL DEFAULT '[]',
+  checks_json   TEXT    NOT NULL DEFAULT '{}',
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);

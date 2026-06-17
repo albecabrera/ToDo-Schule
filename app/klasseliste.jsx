@@ -1,4 +1,4 @@
-// app/klasseliste.jsx — ToDo-Schule Klasseliste
+// app/klasseliste.jsx — ToDo-Schule Klassenliste
 (function () {
 "use strict";
 const { useState, useEffect, useRef } = React;
@@ -71,7 +71,7 @@ function gradeColor(v) {
   return "#dc2626";
 }
 
-const TYPE_CYCLE = { check: "date", date: "grade", grade: "check" };
+const TYPE_CYCLE = { check: "grade", grade: "check", date: "check" };
 const TYPE_ICON  = { check: "✓", date: "📅", grade: "🔢" };
 
 // ── Export helpers ────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ function buildTableHTML(list) {
   const colIcon = c => c.type === "date" ? "📅 " : c.type === "grade" ? "🔢 " : "";
   const header = `<tr>
     <th style="text-align:left;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9">Name</th>
-    ${cols.map(c => `<th style="text-align:center;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9;min-width:90px">${colIcon(c)}${c.title}</th>`).join("")}
+    ${cols.map(c => `<th style="text-align:center;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9;min-width:90px">${colIcon(c)}${c.title}${c.colDate ? `<br><span style="font-size:9pt;font-weight:normal;color:#5c6bc0">${fmtDate(c.colDate)}</span>` : ""}</th>`).join("")}
   </tr>`;
 
   const progress = `<tr>
@@ -116,7 +116,7 @@ function buildTableHTML(list) {
     return `<tr><td style="padding:6px 12px;border:1px solid #e0e0e0;font-weight:500">${name}</td>${cells}</tr>`;
   }).join("");
 
-  return `<h2 style="font-family:Arial,sans-serif;margin-bottom:4px">Klasseliste — Klasse ${list.name}</h2>
+  return `<h2 style="font-family:Arial,sans-serif;margin-bottom:4px">Klassenliste — Klasse ${list.name}</h2>
 <p style="font-family:Arial,sans-serif;color:#666;font-size:10pt;margin-bottom:12px">${students.length} Schüler·innen · Stand: ${date}</p>
 <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:11pt"><thead>${header}${progress}</thead><tbody>${rows}</tbody></table>`;
 }
@@ -127,7 +127,7 @@ function buildChatText(list, colIds = null) {
   const cols = colIds ? allCols.filter(c => colIds.has(c.id)) : allCols;
   const students = list.students || [];
   const checks = list.checks || {};
-  let msg = `📋 Klasseliste ${list.name} (${new Date().toLocaleDateString("de-DE")})\n`;
+  let msg = `📋 Klassenliste ${list.name} (${new Date().toLocaleDateString("de-DE")})\n`;
   cols.forEach(col => {
     if (col.type === "grade") {
       const vals = students.map((_, si) => checks[`${si}:${col.id}`]).filter(v => v !== null && v !== undefined && v !== "");
@@ -158,7 +158,7 @@ function buildStandaloneHTML(list, colIds) {
   const date     = new Date().toLocaleDateString("de-DE");
 
   const ths = `<th style="text-align:left;min-width:160px;padding:10px 14px">Name</th>` +
-    cols.map(c => `<th>${c.type==="date"?"📅 ":""}${c.title}</th>`).join("");
+    cols.map(c => `<th>${c.type==="date"?"📅 ":""}${c.title}${c.colDate ? `<br><span style="font-size:10px;font-weight:400;opacity:.75">${fmtDate(c.colDate)}</span>` : ""}</th>`).join("");
 
   const prog = `<td style="text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#64748b">Fortschritt</td>` +
     cols.map(col => {
@@ -191,7 +191,7 @@ function buildStandaloneHTML(list, colIds) {
 
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Klasseliste – ${list.name}</title>
+<title>Klassenliste – ${list.name}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f8fafc;color:#1e293b;padding:24px}
@@ -211,7 +211,7 @@ td{padding:9px 14px;border-bottom:1px solid #f1f5f9;text-align:center}
 @media print{body{background:#fff;padding:0}.card{box-shadow:none;border-radius:0;max-width:none}}
 </style></head>
 <body><div class="card">
-<div class="hdr"><h1>📋 Klasseliste – Klasse ${list.name}</h1>
+<div class="hdr"><h1>📋 Klassenliste – Klasse ${list.name}</h1>
 <p>${students.length} Schüler·innen · ${cols.length} Spalte${cols.length!==1?"n":""} · Stand: ${date}</p></div>
 <div class="tw"><table>
 <thead><tr>${ths}</tr><tr class="pr">${prog}</tr></thead>
@@ -229,20 +229,37 @@ function ColumnEditor({ columns, onChange }) {
 
   return h("div", { className: "kl-col-editor" },
     columns.map((col, i) =>
-      h("div", { key: col.id, className: "kl-col-row" },
-        h("input", {
-          className: "input kl-col-row-input",
-          value: col.title,
-          placeholder: "Spaltenname",
-          onChange: e => upd(i, { title: e.target.value }),
-        }),
-        h("button", {
-          type: "button",
-          className: `kl-type-btn on`,
-          onClick: () => upd(i, { type: TYPE_CYCLE[col.type] || "check" }),
-          title: "Typ wechseln: ✓ Checkbox / 📅 Datum / 🔢 Note",
-        }, TYPE_ICON[col.type] || "✓"),
-        h("button", { type: "button", className: "kl-col-remove", onClick: () => rem(i) }, "×")
+      h("div", { key: col.id, className: "kl-col-group" },
+        h("div", { className: "kl-col-row" },
+          h("input", {
+            className: "input kl-col-row-input",
+            value: col.title,
+            placeholder: "Spaltenname",
+            onChange: e => upd(i, { title: e.target.value }),
+          }),
+          h("button", {
+            type: "button",
+            className: `kl-type-btn on`,
+            onClick: () => upd(i, { type: TYPE_CYCLE[col.type] || "check" }),
+            title: "Typ wechseln: ✓ Checkbox / 🔢 Note",
+          }, TYPE_ICON[col.type] || "✓"),
+          h("button", { type: "button", className: "kl-col-remove", onClick: () => rem(i) }, "×")
+        ),
+        h("div", { className: "kl-col-date-row" },
+          h("label", { className: "kl-col-date-label" }, "📅 Abgabedatum"),
+          h("input", {
+            type: "date",
+            className: `kl-col-date-field${col.colDate ? " has-date" : ""}`,
+            value: col.colDate || "",
+            onChange: e => upd(i, { colDate: e.target.value || null }),
+          }),
+          col.colDate && h("button", {
+            type: "button",
+            className: "kl-col-date-clear",
+            onClick: () => upd(i, { colDate: null }),
+            title: "Datum entfernen",
+          }, "×")
+        )
       )
     ),
     h("button", { type: "button", className: "btn btn-soft btn-sm kl-add-col-inline", onClick: add }, "+ Spalte hinzufügen")
@@ -274,7 +291,7 @@ function CreateListModal({ onClose, onCreate }) {
   return h("div", { className: "kl-modal-backdrop", onClick: e => e.target === e.currentTarget && onClose() },
     h("div", { className: "kl-modal" },
       h("div", { className: "kl-modal-header" },
-        h("h2", { className: "kl-modal-title" }, "➕ Neue Klasseliste"),
+        h("h2", { className: "kl-modal-title" }, "➕ Neue Klassenliste"),
         h("button", { className: "iconbtn", onClick: onClose }, "✕")
       ),
       h("form", { className: "kl-modal-body", onSubmit: submit },
@@ -386,7 +403,7 @@ function SendChatModal({ list, onClose }) {
     setBusy(true);
     try {
       const activeCols = allSelected ? null : selectedCols;
-      const fileName   = `Klasseliste_${list.name}_${new Date().toISOString().slice(0,10)}.html`;
+      const fileName   = `Klassenliste_${list.name}_${new Date().toISOString().slice(0,10)}.html`;
       const html       = buildStandaloneHTML(list, activeCols);
 
       // Upload the HTML as a chat file attachment
@@ -409,7 +426,7 @@ function SendChatModal({ list, onClose }) {
       await apiFetch("/api/chat", { method: "POST", body: JSON.stringify(body) });
       toast(
         recipientId ? "Direktnachricht gesendet" : "Im Chat geteilt",
-        `Klasseliste ${list.name} wurde gesendet.`
+        `Klassenliste ${list.name} wurde gesendet.`
       );
       onClose();
     } catch(e) {
@@ -537,7 +554,7 @@ function ShareMenu({ list, onClose, onOpenChatModal }) {
     const blob = new Blob([html], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `Klasseliste_${list.name}_${new Date().toISOString().slice(0,10)}.doc`;
+    a.href = url; a.download = `Klassenliste_${list.name}_${new Date().toISOString().slice(0,10)}.doc`;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
     onClose();
@@ -548,8 +565,8 @@ function ShareMenu({ list, onClose, onOpenChatModal }) {
     const cols = list.columns || [];
     const checks = list.checks || {};
     const date = new Date().toLocaleDateString("de-DE");
-    const subject = `Klasseliste ${list.name} — ${date}`;
-    let body = `Klasseliste Klasse ${list.name} (${date})\n${students.length} Schüler·innen\n\n`;
+    const subject = `Klassenliste ${list.name} — ${date}`;
+    let body = `Klassenliste Klasse ${list.name} (${date})\n${students.length} Schüler·innen\n\n`;
     cols.forEach(col => {
       const vals = students.map((_, si) => checks[`${si}:${col.id}`]);
       const done = col.type === "date" ? vals.filter(v => v && typeof v === "string").length : vals.filter(Boolean).length;
@@ -884,6 +901,14 @@ function KlasselisteScreen() {
     updateLocal({ columns, checks }); patchRemote({ columns, checks });
   }
 
+  async function setColDate(colId, date) {
+    if (!activeList) return;
+    const columns = (activeList.columns||[]).map(c =>
+      c.id === colId ? { ...c, colDate: date || null } : c
+    );
+    updateLocal({ columns }); patchRemote({ columns });
+  }
+
   async function finishInlineRename() {
     if (!inlineCol || !activeList) { setInlineCol(null); return; }
     const columns = (activeList.columns||[]).map(c =>
@@ -922,7 +947,7 @@ function KlasselisteScreen() {
 
   if (!activeList && lists.length === 0) return h("div", { className: "kl-empty" },
     h("div", { className: "kl-empty-icon" }, "📋"),
-    h("p", null, "Noch keine Klasseliste."),
+    h("p", null, "Noch keine Klassenliste."),
     h("button", { className: "btn btn-primary", onClick: () => setModal("create") }, "+ Neue Liste")
   );
 
@@ -936,7 +961,7 @@ function KlasselisteScreen() {
   const visibleStudents = showPending
     ? students.filter((_, si) => cols.some(col => {
         const v = checks[`${si}:${col.id}`];
-        return col.type === "date" ? !(v && typeof v === "string") : !v;
+        return !v;
       }))
     : students;
 
@@ -998,7 +1023,7 @@ function KlasselisteScreen() {
               h("th", { className: "kl-th kl-th-name" }, "Name"),
               cols.map(col => h("th", { key: col.id, className: "kl-th" },
                 h("div", { className: "kl-th-inner" },
-                  (col.type === "date" || col.type === "grade") && h("span", { className: "kl-col-type-badge" }, TYPE_ICON[col.type]),
+                  col.type === "grade" && h("span", { className: "kl-col-type-badge" }, TYPE_ICON[col.type]),
                   inlineCol && inlineCol.id === col.id
                     ? h("input", {
                         className: "kl-col-input", value: inlineCol.title, autoFocus: true,
@@ -1012,8 +1037,16 @@ function KlasselisteScreen() {
                         onClick: () => setInlineCol({ id: col.id, title: col.title }),
                         title: "Umbenennen",
                       }, col.title),
+                  h("input", {
+                    type: "date",
+                    className: `kl-col-date-pick${col.colDate ? " has-date" : ""}`,
+                    value: col.colDate || "",
+                    onChange: e => setColDate(col.id, e.target.value),
+                    onClick: e => e.stopPropagation(),
+                    title: col.colDate ? "Datum ändern" : "Datum setzen",
+                  }),
                   h("button", { className: "kl-col-del", onClick: () => removeColumn(col.id), title: "Entfernen" }, "×"),
-                  col.type !== "date" && h("button", {
+                  col.type !== "grade" && h("button", {
                     className: `kl-all-btn${students.length > 0 && students.every((_, si) => !!checks[`${si}:${col.id}`]) ? " full" : ""}`,
                     onClick: e => { e.stopPropagation(); toggleAllCol(col.id); },
                     title: "Alle markieren / abwählen",
@@ -1035,9 +1068,7 @@ function KlasselisteScreen() {
                   );
                 }
                 const vals = students.map((_, si) => checks[`${si}:${col.id}`]);
-                const done = col.type === "date"
-                  ? vals.filter(v => v && typeof v === "string").length
-                  : vals.filter(Boolean).length;
+                const done = vals.filter(Boolean).length;
                 const pct = students.length ? Math.round(done/students.length*100) : 0;
                 return h("td", { key: col.id, className: "kl-td kl-td-prog" },
                   h("div", { className: "kl-prog" },
@@ -1064,17 +1095,6 @@ function KlasselisteScreen() {
                 }, name),
                 cols.map(col => {
                   const key = `${si}:${col.id}`;
-                  if (col.type === "date") {
-                    const val = typeof checks[key] === "string" ? checks[key] : "";
-                    return h("td", { key: col.id, className: "kl-td kl-td-check" },
-                      h("input", {
-                        type: "date",
-                        className: `kl-date-input${val ? " has-value" : ""}`,
-                        value: val,
-                        onChange: e => setDateValue(si, col.id, e.target.value),
-                      })
-                    );
-                  }
                   if (col.type === "grade") {
                     const val = checks[key] ?? "";
                     return h("td", { key: col.id, className: "kl-td kl-td-check" },

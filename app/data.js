@@ -193,6 +193,7 @@ function clearTokens(){
   accessToken = refreshToken = null;
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  window.dispatchEvent(new Event("esg:auth:expired"));
 }
 function hasSession(){ return !!localStorage.getItem("accessToken"); }
 

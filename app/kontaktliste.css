@@ -1,0 +1,211 @@
+/* app/kontaktliste.css — Kontaktliste Klasse 5d */
+
+.klk-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg, #f4f6f9);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.klk-header {
+  padding: 16px 20px 12px;
+  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.klk-header-top {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.klk-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--fg, #1a202c);
+  margin: 0;
+}
+
+.klk-count {
+  font-size: 0.78rem;
+  color: var(--fg-muted, #718096);
+}
+
+.klk-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.klk-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.klk-search {
+  width: 100%;
+  max-width: 360px;
+  padding: 7px 10px 7px 32px;
+  font-size: 0.875rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--bg-input, #f7fafc);
+  color: var(--fg, #1a202c);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.klk-search:focus {
+  border-color: var(--accent, #4f8ef7);
+  background: #fff;
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.klk-table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+.klk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.855rem;
+}
+
+.klk-th {
+  position: sticky;
+  top: 0;
+  background: var(--surface, #fff);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--fg-muted, #718096);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.klk-th-name  { min-width: 160px; }
+.klk-th-addr  { min-width: 180px; }
+.klk-th-notes { min-width: 200px; }
+.klk-th-edit  { width: 40px; }
+
+.klk-row {
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  transition: background 0.1s;
+}
+
+.klk-row:hover {
+  background: var(--bg-hover, #f0f4ff);
+}
+
+.klk-row.klk-warn {
+  background: #fff8f0;
+}
+
+.klk-row.klk-warn:hover {
+  background: #ffefe0;
+}
+
+.klk-td {
+  padding: 9px 12px;
+  vertical-align: middle;
+  color: var(--fg, #1a202c);
+}
+
+.klk-td-name {
+  white-space: nowrap;
+}
+
+.klk-td-addr,
+.klk-td-notes {
+  max-width: 240px;
+}
+
+/* ── Name ────────────────────────────────────────────────────────────────── */
+.klk-name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.klk-nachname {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.klk-vorname {
+  color: var(--fg-sub, #4a5568);
+}
+
+/* ── Tel ─────────────────────────────────────────────────────────────────── */
+.kl-tel {
+  color: var(--accent, #4f8ef7);
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.kl-tel:hover {
+  text-decoration: underline;
+}
+
+.kl-no-data {
+  color: var(--fg-disabled, #cbd5e0);
+  font-size: 0.85rem;
+}
+
+/* ── Warning ─────────────────────────────────────────────────────────────── */
+.klk-warn-text {
+  color: #c05621;
+  font-weight: 500;
+}
+
+/* ── Edit ────────────────────────────────────────────────────────────────── */
+.klk-edit-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted, #718096);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.klk-edit-btn:hover {
+  background: var(--bg-hover, #f0f4ff);
+  border-color: var(--border, #e2e8f0);
+}
+
+.klk-edit-btn.active {
+  background: #ebfdf1;
+  border-color: #68d391;
+  color: #276749;
+}
+
+.klk-edit-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.84rem;
+  border: 1px solid var(--accent, #4f8ef7);
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: var(--fg, #1a202c);
+  min-width: 120px;
+}

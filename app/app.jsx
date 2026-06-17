@@ -179,7 +179,12 @@ function App(){
     localStorage.setItem("esg-theme", t.theme);
   },[t.theme,t.accent,t.density]);
   // persist default view choice
-  const [screen,setScreen] = useState("login");
+  const [screen,setScreen] = useState(() => localStorage.getItem("accessToken") ? "app" : "login");
+  useEffect(() => {
+    function onExpired() { setScreen("login"); }
+    window.addEventListener("esg:auth:expired", onExpired);
+    return () => window.removeEventListener("esg:auth:expired", onExpired);
+  }, []);
   const [section,setSection]       = useState("tasks"); // tasks | notes
   const [tasks, setTasks]          = useState(INIT_TASKS);
   const [notes, setNotes]          = useState(window.ESG_DATA.NOTES);

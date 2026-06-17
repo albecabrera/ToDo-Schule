@@ -1,13 +1,13 @@
 # ToDo-Schule 📋
 
-Kollaborative **Aufgaben-, Notizen-, Chat- und Klasseliste-PWA** für das Kollegium der
+Kollaborative **Aufgaben-, Notizen-, Chat-, Klassenliste- und Kontaktliste-PWA** für das Kollegium der
 Elisabeth-Selbert-Gesamtschule (Bonn-Bad Godesberg). Lehrkräfte teilen Aufgaben,
-Klasselisten und Notizen in Echtzeit — installierbar als App, offline-fähig,
+Klassenlisten und Notizen in Echtzeit — installierbar als App, offline-fähig,
 mit Push-Benachrichtigungen und Echtzeit-Präsenz.
 
 > **Aktuelle Nutzer:** Alberto Cabrera · Loana Venedey  
 > **Datenbank:** SQLite (kein MySQL/MariaDB nötig)  
-> **Letztes Update:** 2026-06-17
+> **Letztes Update:** 2026-06-17 — Kontaktliste 5d + Klassenliste Abgabedaten + Session-Persistenz
 
 ---
 
@@ -22,11 +22,12 @@ mit Push-Benachrichtigungen und Echtzeit-Präsenz.
 | **iCal-Export** | `.ics`-Feed für Google Calendar/Outlook/Apple Calendar abonnierbar |
 | **Command Palette ⌘K** | Springen zu Aufgabe/Notiz/Kollege/Aktion per Tastatur |
 
-### Klasseliste (Kooperativ)
+### Klassenliste (Kooperativ)
 | Feature | Details |
 |---------|---------|
-| **Checkliste** | Schülerliste mit ✓/📅/🔢-Spalten, inline umbenennen, Spalten hinzufügen/entfernen |
-| **Spaltentypen** | ✓ Checkbox · 📅 Datum · 🔢 Note (1-6 mit Farbkodierung grün/gelb/rot + Klassendurchschnitt) |
+| **Checkliste** | Schülerliste mit ✓/🔢-Spalten, inline umbenennen, Spalten hinzufügen/entfernen |
+| **Spaltentypen** | ✓ Checkbox · 🔢 Note (1-6 mit Farbkodierung grün/gelb/rot + Klassendurchschnitt) |
+| **Abgabedatum** | Optionales Fälligkeitsdatum pro Spalte — direkt im Header oder via Bearbeiten-Modal (📅 Abgabedatum) |
 | **Schüler·in-Profil** | Click auf Namen → Seitenpanel mit Fortschritt quer über alle Listen |
 | **Elternkontakt-Log** | Im Profil-Panel: Kontakthistorie pro Schüler·in (📞 E-Mail Persönlich Schriftlich + Notiz) |
 | **Echtzeit-Sync** | Änderungen von Alberto oder Loana erscheinen sofort bei beiden (WS-Broadcast) |
@@ -38,6 +39,15 @@ mit Push-Benachrichtigungen und Echtzeit-Präsenz.
 | **Export** | PDF drucken, Word (.doc), per Chat teilen (mit Spaltenauswahl + Empfänger), per E-Mail |
 | **Chat-Anhang** | HTML-Anhang öffnet sich als interaktive Liste im Browser |
 | **Wöchentlicher Digest** | PHP-Cron schickt jeden Montag 08:00 HTML-E-Mail mit Fortschrittsübersicht |
+
+### Kontaktliste 5d
+| Feature | Details |
+|---------|---------|
+| **Schüler·innen** | Alle 28 Schüler·innen der Klasse 5d mit Nachname, Vorname, Tel. Mutter, Tel. Vater, Adresse, Sonstiges |
+| **Anrufen** | Telefonnummern als `tel:`-Links — ein Tap wählt direkt auf dem Smartphone |
+| **Warnmarkierung** | Zeilen mit ⚠️ (Allergien, Medikamente) werden orange hervorgehoben |
+| **Suche** | Filterbar nach Name, Adresse oder Sonstiges-Inhalt |
+| **Inline-Edit** | Adresse und Sonstiges-Notiz per ✏️-Knopf direkt in der Tabelle bearbeiten (speichert in `localStorage`) |
 
 ### Klassenbuch & Kalender
 | Feature | Details |

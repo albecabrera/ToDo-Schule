@@ -657,6 +657,12 @@ function App(){
               ? h(NotesView,{notes,onSave:saveNote,onDelete:deleteNote,searchVal})
               : section==="chat"
               ? (window.ChatView ? h(window.ChatView,{}) : null)
+              : section==="klasseliste"
+              ? (window.KlasselisteScreen ? h(window.KlasselisteScreen,{}) : null)
+              : section==="klassenbuch"
+              ? (window.KlassenbuchView ? h(window.KlassenbuchView,{}) : null)
+              : section==="kontaktliste"
+              ? (window.KontaktlisteView ? h(window.KontaktlisteView,{}) : null)
               : h(Fragment,null,
                   h(Subbar,{filters,setFilters,view,setView,sortBy,setSortBy,tasks:visibleTasks}),
                   view==="list"

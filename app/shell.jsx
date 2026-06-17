@@ -300,6 +300,29 @@ function Sidebar({
         it.count > 0 && h("span",{className:"ct"},it.count)
       )),
 
+      h("div",{className:"sb-label"},h("span",null,"Klasse")),
+      h("button",{
+        className:`navitem ${section==="klasseliste"?"on":""}`,
+        onClick:()=>{ setSection("klasseliste"); onClose(); }
+      },
+        h(Icon,{n:"list",size:17}),
+        h("span",{className:"grow"},"Klassenliste 📋")
+      ),
+      h("button",{
+        className:`navitem ${section==="klassenbuch"?"on":""}`,
+        onClick:()=>{ setSection("klassenbuch"); onClose(); }
+      },
+        h(Icon,{n:"bookOpen",size:17}),
+        h("span",{className:"grow"},"Klassenbuch 📖")
+      ),
+      h("button",{
+        className:`navitem ${section==="kontaktliste"?"on":""}`,
+        onClick:()=>{ setSection("kontaktliste"); onClose(); }
+      },
+        h(Icon,{n:"users",size:17}),
+        h("span",{className:"grow"},"Kontaktliste 📇")
+      ),
+
       h("div",{className:"sb-label"},h("span",null,"Kollegium")),
       h("button",{
         className:`navitem ${section==="notes"?"on":""}`,

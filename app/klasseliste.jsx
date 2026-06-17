@@ -62,6 +62,18 @@ function fmtDate(iso) {
   catch { return iso; }
 }
 
+function gradeColor(v) {
+  const n = parseFloat(v);
+  if (!v && v !== 0) return "var(--text-3)";
+  if (n <= 2) return "#16a34a";
+  if (n <= 3) return "#ca8a04";
+  if (n <= 4) return "#d97706";
+  return "#dc2626";
+}
+
+const TYPE_CYCLE = { check: "date", date: "grade", grade: "check" };
+const TYPE_ICON  = { check: "✓", date: "📅", grade: "🔢" };
+
 // ── Export helpers ────────────────────────────────────────────────────────────
 function buildTableHTML(list) {
   const cols = list.columns || [];
@@ -69,14 +81,20 @@ function buildTableHTML(list) {
   const checks = list.checks || {};
   const date = new Date().toLocaleDateString("de-DE");
 
+  const colIcon = c => c.type === "date" ? "📅 " : c.type === "grade" ? "🔢 " : "";
   const header = `<tr>
     <th style="text-align:left;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9">Name</th>
-    ${cols.map(c => `<th style="text-align:center;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9;min-width:90px">${c.type==="date"?"📅 ":""}${c.title}</th>`).join("")}
+    ${cols.map(c => `<th style="text-align:center;background:#e8eaf6;padding:8px 12px;border:1px solid #c5cae9;min-width:90px">${colIcon(c)}${c.title}</th>`).join("")}
   </tr>`;
 
   const progress = `<tr>
     <td style="background:#f5f5f5;padding:6px 12px;border:1px solid #e0e0e0;font-size:10pt;font-weight:bold">Fortschritt</td>
     ${cols.map(col => {
+      if (col.type === "grade") {
+        const vals = students.map((_, si) => checks[`${si}:${col.id}`]).filter(v => v !== null && v !== undefined && v !== "");
+        const avg = vals.length ? (vals.reduce((s, v) => s + parseFloat(v), 0) / vals.length).toFixed(1) : "—";
+        return `<td style="background:#f5f5f5;text-align:center;border:1px solid #e0e0e0;font-size:10pt">⌀ ${avg}</td>`;
+      }
       const vals = students.map((_, si) => checks[`${si}:${col.id}`]);
       const done = col.type === "date"
         ? vals.filter(v => v && typeof v === "string").length
@@ -91,6 +109,7 @@ function buildTableHTML(list) {
       const val = checks[`${si}:${col.id}`];
       let display = "";
       if (col.type === "date") display = val ? fmtDate(val) : "";
+      else if (col.type === "grade") display = val ? `<span style="font-weight:bold">${val}</span>` : "";
       else display = val ? '<span style="color:#16a34a;font-weight:bold">✓</span>' : "";
       return `<td style="text-align:center;border:1px solid #e0e0e0;padding:5px 8px">${display}</td>`;
     }).join("");
@@ -110,6 +129,12 @@ function buildChatText(list, colIds = null) {
   const checks = list.checks || {};
   let msg = `📋 Klasseliste ${list.name} (${new Date().toLocaleDateString("de-DE")})\n`;
   cols.forEach(col => {
+    if (col.type === "grade") {
+      const vals = students.map((_, si) => checks[`${si}:${col.id}`]).filter(v => v !== null && v !== undefined && v !== "");
+      const avg = vals.length ? (vals.reduce((s, v) => s + parseFloat(v), 0) / vals.length).toFixed(1) : "—";
+      msg += `\n🔢 ${col.title}: ⌀ ${avg} (${vals.length}/${students.length} benotet)`;
+      return;
+    }
     const vals = students.map((_, si) => checks[`${si}:${col.id}`]);
     const done = col.type === "date"
       ? vals.filter(v => v && typeof v === "string").length
@@ -137,6 +162,11 @@ function buildStandaloneHTML(list, colIds) {
 
   const prog = `<td style="text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#64748b">Fortschritt</td>` +
     cols.map(col => {
+      if (col.type === "grade") {
+        const gvals = students.map((_, si) => checks[`${si}:${col.id}`]).filter(v => v !== null && v !== undefined && v !== "");
+        const avg = gvals.length ? (gvals.reduce((s, v) => s + parseFloat(v), 0) / gvals.length).toFixed(1) : "—";
+        return `<td>⌀ ${avg} (${gvals.length}/${students.length})</td>`;
+      }
       const done = students.filter((_, si) => {
         const v = checks[`${si}:${col.id}`];
         return col.type === "date" ? (v && typeof v === "string") : !!v;
@@ -149,6 +179,11 @@ function buildStandaloneHTML(list, colIds) {
     const cells = cols.map(col => {
       const val = checks[`${si}:${col.id}`];
       if (col.type === "date") return `<td style="color:#16a34a;font-weight:600;font-size:12px">${val ? fmtDate(val) : ""}</td>`;
+      if (col.type === "grade") {
+        const n = parseFloat(val);
+        const color = !val ? "#94a3b8" : n <= 2 ? "#16a34a" : n <= 3 ? "#ca8a04" : n <= 4 ? "#d97706" : "#dc2626";
+        return `<td style="color:${color};font-weight:700;font-size:14px">${val || ""}</td>`;
+      }
       return `<td style="color:#16a34a;font-weight:800;font-size:16px">${val ? "✓" : ""}</td>`;
     }).join("");
     return `<tr><td style="text-align:left;font-weight:500;padding:9px 14px">${name}</td>${cells}</tr>`;
@@ -203,10 +238,10 @@ function ColumnEditor({ columns, onChange }) {
         }),
         h("button", {
           type: "button",
-          className: `kl-type-btn${col.type === "date" ? " on" : ""}`,
-          onClick: () => upd(i, { type: col.type === "date" ? "check" : "date" }),
-          title: col.type === "date" ? "Datum → Checkbox wechseln" : "Checkbox → Datum wechseln",
-        }, col.type === "date" ? "📅" : "✓"),
+          className: `kl-type-btn on`,
+          onClick: () => upd(i, { type: TYPE_CYCLE[col.type] || "check" }),
+          title: "Typ wechseln: ✓ Checkbox / 📅 Datum / 🔢 Note",
+        }, TYPE_ICON[col.type] || "✓"),
         h("button", { type: "button", className: "kl-col-remove", onClick: () => rem(i) }, "×")
       )
     ),
@@ -546,6 +581,126 @@ function ShareMenu({ list, onClose, onOpenChatModal }) {
   );
 }
 
+// ── StudentPanel (D: Elternkontakt-Log + E: cross-list profile) ───────────────
+function StudentPanel({ student, allLists, activeListId, onClose }) {
+  const [contacts, setContacts]   = useState([]);
+  const [loadingC, setLoadingC]   = useState(true);
+  const [showForm, setShowForm]   = useState(false);
+  const [form, setForm]           = useState({ date: new Date().toISOString().slice(0, 10), type: "telefon", note: "" });
+  const [busy, setBusy]           = useState(false);
+
+  useEffect(() => {
+    if (!activeListId) return;
+    setLoadingC(true);
+    apiFetch(`/api/elternkontakte?list_id=${activeListId}&student=${encodeURIComponent(student)}`)
+      .then(d => setContacts(Array.isArray(d) ? d : []))
+      .catch(() => {})
+      .finally(() => setLoadingC(false));
+  }, [student, activeListId]);
+
+  async function addContact(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const item = await apiFetch("/api/elternkontakte", {
+        method: "POST",
+        body: JSON.stringify({ list_id: activeListId, student_name: student, contact_date: form.date, contact_type: form.type, note: form.note }),
+      });
+      setContacts(p => [item, ...p]);
+      setShowForm(false);
+      setForm({ date: new Date().toISOString().slice(0, 10), type: "telefon", note: "" });
+    } finally { setBusy(false); }
+  }
+
+  async function delContact(id) {
+    await apiFetch(`/api/elternkontakte/${id}`, { method: "DELETE" });
+    setContacts(p => p.filter(c => c.id !== id));
+  }
+
+  // Cross-list profile (Feature E)
+  const profile = allLists.map(list => {
+    const siInList = (list.students || []).indexOf(student);
+    if (siInList === -1) return null;
+    const cols = list.columns || [];
+    const ch = list.checks || {};
+    const checkCols = cols.filter(c => c.type === "check");
+    const dateCols  = cols.filter(c => c.type === "date");
+    const gradeCols = cols.filter(c => c.type === "grade");
+    const done      = checkCols.filter(c => !!ch[`${siInList}:${c.id}`]).length;
+    const dates     = dateCols.filter(c => ch[`${siInList}:${c.id}`]).length;
+    const grades    = gradeCols.map(c => ({ title: c.title, val: ch[`${siInList}:${c.id}`] })).filter(g => g.val !== undefined && g.val !== null && g.val !== "");
+    return { listId: list.id, listName: list.name, checkDone: done, checkTotal: checkCols.length, dates, totalDates: dateCols.length, grades };
+  }).filter(Boolean);
+
+  const TYPE_LABELS = { telefon: "📞 Telefon", email: "✉️ E-Mail", persoenlich: "👤 Persönlich", schriftlich: "📄 Schriftlich" };
+
+  return h("div", { className: "kl-student-panel" },
+    h("div", { className: "kl-sp-header" },
+      h("div", null,
+        h("div", { className: "kl-sp-avatar" }, student.charAt(0).toUpperCase()),
+        h("div", null,
+          h("div", { className: "kl-sp-name" }, student),
+          h("div", { className: "kl-sp-sub" }, "Schüler·in-Profil")
+        )
+      ),
+      h("button", { className: "iconbtn", onClick: onClose }, "✕")
+    ),
+
+    // Cross-list progress (E)
+    h("div", { className: "kl-sp-section" },
+      h("div", { className: "kl-sp-section-title" }, "📊 Fortschritt"),
+      profile.length === 0
+        ? h("p", { className: "kl-sp-empty" }, "Nicht in einer Liste.")
+        : profile.map(p => h("div", { key: p.listId, className: "kl-sp-list-row" },
+            h("span", { className: "kl-sp-list-name" }, "Klasse ", p.listName),
+            p.checkTotal > 0 && h("span", { className: `kl-sp-chip${p.checkDone === p.checkTotal ? " done" : ""}` },
+              `✓ ${p.checkDone}/${p.checkTotal}`
+            ),
+            p.totalDates > 0 && h("span", { className: `kl-sp-chip${p.dates === p.totalDates ? " done" : ""}` },
+              `📅 ${p.dates}/${p.totalDates}`
+            ),
+            ...p.grades.map(g => h("span", { key: g.title, className: "kl-sp-chip grade", style: { color: gradeColor(g.val) } },
+              `🔢 ${g.title}: ${g.val}`
+            ))
+          ))
+    ),
+
+    // Elternkontakt-Log (D)
+    h("div", { className: "kl-sp-section" },
+      h("div", { className: "kl-sp-section-title" },
+        "📞 Elternkontakt",
+        !showForm && h("button", { className: "btn btn-soft btn-sm kl-sp-add", onClick: () => setShowForm(true) }, "+ Neu")
+      ),
+      showForm && h("form", { className: "kl-sp-form", onSubmit: addContact },
+        h("div", { className: "kl-sp-form-row" },
+          h("input", { type: "date", className: "input", value: form.date, onChange: e => setForm(p => ({ ...p, date: e.target.value })), required: true }),
+          h("select", { className: "input", value: form.type, onChange: e => setForm(p => ({ ...p, type: e.target.value })) },
+            Object.entries(TYPE_LABELS).map(([v, l]) => h("option", { key: v, value: v }, l))
+          )
+        ),
+        h("textarea", { className: "kl-textarea", rows: 2, placeholder: "Notiz (optional)", value: form.note, onChange: e => setForm(p => ({ ...p, note: e.target.value })) }),
+        h("div", { className: "kl-sp-form-btns" },
+          h("button", { type: "button", className: "btn", onClick: () => setShowForm(false) }, "Abbrechen"),
+          h("button", { type: "submit", className: "btn btn-primary", disabled: busy }, busy ? "…" : "Speichern")
+        )
+      ),
+      loadingC
+        ? h("p", { className: "kl-sp-empty" }, "Laden…")
+        : contacts.length === 0 && !showForm
+          ? h("p", { className: "kl-sp-empty" }, "Noch kein Kontakt eingetragen.")
+          : contacts.map(c => h("div", { key: c.id, className: "kl-sp-contact" },
+              h("div", { className: "kl-sp-contact-meta" },
+                h("span", { className: "kl-sp-contact-type" }, TYPE_LABELS[c.type] || c.type),
+                h("span", { className: "kl-sp-contact-date" }, fmtDate(c.date)),
+                h("span", { className: "kl-sp-contact-by" }, c.userName)
+              ),
+              c.note && h("p", { className: "kl-sp-contact-note" }, c.note),
+              h("button", { className: "kl-sp-contact-del", onClick: () => delContact(c.id), title: "Löschen" }, "×")
+            ))
+    )
+  );
+}
+
 // ── KlasselisteScreen ─────────────────────────────────────────────────────────
 function KlasselisteScreen() {
   const [lists, setLists]             = useState([]);
@@ -553,10 +708,11 @@ function KlasselisteScreen() {
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState(null); // null|"create"|"edit"|"delete"|"share"|"sendchat"
   const [inlineCol, setInlineCol]     = useState(null);
-  const [showPending, setShowPending] = useState(false);
-  const [activeUsers, setActiveUsers] = useState([]);
-  const presenceRef                   = useRef({});
-  const myUserIdRef                   = useRef(null);
+  const [showPending, setShowPending]     = useState(false);
+  const [activeUsers, setActiveUsers]     = useState([]);
+  const [studentPanel, setStudentPanel]   = useState(null); // student name or null
+  const presenceRef                       = useRef({});
+  const myUserIdRef                       = useRef(null);
 
   useEffect(() => { loadLists(); }, []);
 
@@ -675,6 +831,17 @@ function KlasselisteScreen() {
       (activeList.students || []).every((_, i) => !!checks[`${i}:${colId}`]);
     updateLocal({ checks });
     if (!wasComplete && isComplete) triggerConfetti(col?.title);
+    try {
+      await apiFetch(`/api/klasselisten/${activeId}`, { method: "PATCH", body: JSON.stringify({ checks }) });
+    } catch(e) { updateLocal({ checks: activeList.checks }); }
+  }
+
+  async function setGradeValue(si, colId, value) {
+    if (!activeList) return;
+    const key = `${si}:${colId}`;
+    const num = value === "" ? null : Math.min(6, Math.max(1, parseInt(value, 10)));
+    const checks = { ...(activeList.checks || {}), [key]: num };
+    updateLocal({ checks });
     try {
       await apiFetch(`/api/klasselisten/${activeId}`, { method: "PATCH", body: JSON.stringify({ checks }) });
     } catch(e) { updateLocal({ checks: activeList.checks }); }
@@ -831,7 +998,7 @@ function KlasselisteScreen() {
               h("th", { className: "kl-th kl-th-name" }, "Name"),
               cols.map(col => h("th", { key: col.id, className: "kl-th" },
                 h("div", { className: "kl-th-inner" },
-                  col.type === "date" && h("span", { className: "kl-col-type-badge" }, "📅"),
+                  (col.type === "date" || col.type === "grade") && h("span", { className: "kl-col-type-badge" }, TYPE_ICON[col.type]),
                   inlineCol && inlineCol.id === col.id
                     ? h("input", {
                         className: "kl-col-input", value: inlineCol.title, autoFocus: true,
@@ -860,6 +1027,13 @@ function KlasselisteScreen() {
             h("tr", { className: "kl-progress-row" },
               h("td", { className: "kl-td kl-td-name kl-td-prog-label" }, "Fortschritt"),
               cols.map(col => {
+                if (col.type === "grade") {
+                  const gvals = students.map((_, si) => checks[`${si}:${col.id}`]).filter(v => v !== null && v !== undefined && v !== "");
+                  const avg = gvals.length ? (gvals.reduce((s, v) => s + parseFloat(v), 0) / gvals.length).toFixed(1) : "—";
+                  return h("td", { key: col.id, className: "kl-td kl-td-prog" },
+                    h("span", { className: "kl-grade-avg", style: { color: gradeColor(avg) } }, gvals.length ? `⌀ ${avg}` : "—")
+                  );
+                }
                 const vals = students.map((_, si) => checks[`${si}:${col.id}`]);
                 const done = col.type === "date"
                   ? vals.filter(v => v && typeof v === "string").length
@@ -883,7 +1057,11 @@ function KlasselisteScreen() {
             visibleStudents.map((name) => {
               const si = students.indexOf(name);
               return h("tr", { key: si, className: "kl-row" },
-                h("td", { className: "kl-td kl-td-name" }, name),
+                h("td", {
+                  className: "kl-td kl-td-name kl-td-name-click",
+                  onClick: () => setStudentPanel(p => p === name ? null : name),
+                  title: "Schüler·in-Profil öffnen",
+                }, name),
                 cols.map(col => {
                   const key = `${si}:${col.id}`;
                   if (col.type === "date") {
@@ -894,6 +1072,19 @@ function KlasselisteScreen() {
                         className: `kl-date-input${val ? " has-value" : ""}`,
                         value: val,
                         onChange: e => setDateValue(si, col.id, e.target.value),
+                      })
+                    );
+                  }
+                  if (col.type === "grade") {
+                    const val = checks[key] ?? "";
+                    return h("td", { key: col.id, className: "kl-td kl-td-check" },
+                      h("input", {
+                        type: "number", min: 1, max: 6, step: 1,
+                        className: `kl-grade-input${val !== "" ? " has-value" : ""}`,
+                        value: val,
+                        placeholder: "—",
+                        onChange: e => setGradeValue(si, col.id, e.target.value),
+                        style: { color: val !== "" ? gradeColor(val) : undefined },
                       })
                     );
                   }
@@ -912,6 +1103,14 @@ function KlasselisteScreen() {
         )
       )
     ),
+
+    // ── Student panel (D+E) ─────────────────────────────────────────────────
+    studentPanel && h(StudentPanel, {
+      student: studentPanel,
+      allLists: lists,
+      activeListId: activeId,
+      onClose: () => setStudentPanel(null),
+    }),
 
     // ── Modals ──────────────────────────────────────────────────────────────
     modal === "create"   && h(CreateListModal, { onClose: () => setModal(null), onCreate: handleCreate }),

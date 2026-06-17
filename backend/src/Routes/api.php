@@ -20,6 +20,8 @@ use App\Controllers\SearchController;
 use App\Controllers\ShareController;
 use App\Controllers\TaskController;
 use App\Controllers\CalendarController;
+use App\Controllers\ElternkontaktController;
+use App\Controllers\KlassenbuchController;
 use App\Controllers\KlasselisteController;
 use App\Controllers\TeamController;
 use App\Controllers\UserController;
@@ -65,6 +67,18 @@ return (static function (): Router {
     $r->delete('/api/admin/users/:id',       [AdminController::class, 'destroy'],       ['auth' => true, 'admin' => true]);
 
     // --- Klasselisten ---------------------------------------------------------
+    // --- Elternkontakte -----------------------------------------------------
+    $r->get('/api/elternkontakte',         [ElternkontaktController::class, 'index'],   ['auth' => true]);
+    $r->post('/api/elternkontakte',        [ElternkontaktController::class, 'store'],   ['auth' => true]);
+    $r->delete('/api/elternkontakte/:id',  [ElternkontaktController::class, 'destroy'], ['auth' => true]);
+
+    // --- Klassenbuch ---------------------------------------------------------
+    $r->get('/api/klassenbuch',            [KlassenbuchController::class, 'index'],     ['auth' => true]);
+    $r->post('/api/klassenbuch',           [KlassenbuchController::class, 'store'],     ['auth' => true]);
+    $r->patch('/api/klassenbuch/:id',      [KlassenbuchController::class, 'update'],    ['auth' => true]);
+    $r->delete('/api/klassenbuch/:id',     [KlassenbuchController::class, 'destroy'],   ['auth' => true]);
+
+    // --- Klasselisten --------------------------------------------------------
     $r->get('/api/klasselisten',            [KlasselisteController::class, 'index'],    ['auth' => true]);
     $r->post('/api/klasselisten',           [KlasselisteController::class, 'store'],    ['auth' => true]);
     $r->post('/api/klasselisten/presence',  [KlasselisteController::class, 'presence'], ['auth' => true]);

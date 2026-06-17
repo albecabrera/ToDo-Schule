@@ -17,9 +17,11 @@ final class Cors
         $allowed = array_map('trim', explode(',', (string) Env::get('ALLOWED_ORIGIN', '*')));
         $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+        $isLocalhost = $origin !== '' && (bool) preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $origin);
+
         if (in_array('*', $allowed, true)) {
             header('Access-Control-Allow-Origin: *');
-        } elseif ($origin !== '' && in_array($origin, $allowed, true)) {
+        } elseif ($isLocalhost || ($origin !== '' && in_array($origin, $allowed, true))) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Vary: Origin');
             header('Access-Control-Allow-Credentials: true');

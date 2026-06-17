@@ -30,7 +30,12 @@ SecurityHeaders::apply();
 Cors::apply(); // beantwortet OPTIONS-Preflight selbst
 
 // Healthcheck (praktisch für Deployment-Probes).
-if (($_SERVER['REQUEST_URI'] ?? '') === '/health') {
+$_healthUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+$_scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'), '/');
+$_healthPath = ($_scriptDir !== '' && str_starts_with($_healthUri, $_scriptDir . '/'))
+    ? substr($_healthUri, strlen($_scriptDir))
+    : $_healthUri;
+if ($_healthPath === '/health') {
     Response::json(['status' => 'ok', 'time' => gmdate('c')]);
 }
 

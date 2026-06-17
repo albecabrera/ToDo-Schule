@@ -1,0 +1,491 @@
+/* ============================================================================
+   Klasseliste — Checkliste für Klassen  (modernes Design)
+   ============================================================================ */
+
+.kl-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Loading / Empty ────────────────────────────────────────────────────── */
+.kl-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; height: 200px; color: var(--text-2); font-size: 14px;
+}
+.kl-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: kl-spin 0.7s linear infinite;
+}
+@keyframes kl-spin { to { transform: rotate(360deg); } }
+
+.kl-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; height: 300px; color: var(--text-2);
+}
+.kl-empty-icon { font-size: 48px; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.kl-header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+/* Tabs */
+.kl-tabs {
+  display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.kl-tab {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  background: var(--bg-2); color: var(--text-2);
+  border: 1.5px solid var(--border); cursor: pointer;
+  transition: all .15s;
+}
+.kl-tab.on {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.kl-tab-new {
+  font-size: 17px; font-weight: 700; line-height: 1;
+  padding: 4px 11px; color: var(--accent); border-style: dashed;
+}
+.kl-tab-new:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Header row */
+.kl-header-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.kl-student-count {
+  font-size: 13px; color: var(--text-3); flex: 1;
+}
+.kl-action-group { display: flex; align-items: center; gap: 6px; }
+
+/* Shared button helpers */
+.btn-soft {
+  background: var(--bg-2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.btn-soft:hover { background: var(--bg-3, color-mix(in srgb, var(--border) 50%, var(--bg))); color: var(--text-1); }
+.btn-sm { padding: 5px 11px !important; font-size: 12px !important; border-radius: 8px !important; }
+.btn-danger { background: #ef4444; color: #fff; border: none; }
+.btn-danger:hover { background: #dc2626; }
+.kl-del-btn:hover { background: #fef2f2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
+
+/* Share menu */
+.kl-share-wrap { position: relative; }
+.kl-share-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 500;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14);
+  padding: 6px; min-width: 210px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.kl-share-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 13px; color: var(--text-1);
+  background: transparent; border: none; cursor: pointer;
+  text-align: left; width: 100%; transition: background .1s;
+}
+.kl-share-item:hover { background: var(--bg-2); }
+.kl-share-icon { font-size: 16px; flex-shrink: 0; }
+
+/* ── Table wrapper ──────────────────────────────────────────────────────── */
+.kl-table-wrap {
+  flex: 1;
+  overflow: hidden;          /* card manages its own scroll */
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Table card — rounded, shadowed, IS the scroll container */
+.kl-table-card {
+  flex: 1;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  overflow: auto;            /* scroll both axes here */
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+
+[data-theme="dark"] .kl-table-card {
+  box-shadow: 0 2px 16px rgba(0,0,0,.3);
+}
+
+.kl-table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 13px;
+}
+
+/* ── Sticky name column ─────────────────────────────────────────────────── */
+.kl-th-name, .kl-td-name {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--bg);
+  min-width: 160px; max-width: 200px;
+}
+.kl-th-name { z-index: 3; background: var(--bg-2); }
+
+/* ── Column headers ─────────────────────────────────────────────────────── */
+.kl-th {
+  padding: 0; font-weight: 600;
+  color: var(--text-2);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap; vertical-align: bottom;
+  background: var(--bg-2);
+}
+.kl-th-name {
+  padding: 12px 16px; text-align: left;
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-3);
+}
+.kl-th-add { min-width: 44px; background: var(--bg-2); }
+
+.kl-th-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; padding: 10px 6px 8px;
+  min-width: 84px; max-width: 140px; position: relative;
+}
+.kl-col-type-badge {
+  font-size: 11px; opacity: .7;
+}
+.kl-col-title {
+  display: block; text-align: center; font-size: 12px; line-height: 1.3;
+  cursor: pointer; padding: 2px 4px; border-radius: 4px;
+  word-break: break-word; white-space: normal;
+  transition: background .15s;
+}
+.kl-col-title:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.kl-col-input {
+  width: 100%; font-size: 12px; text-align: center;
+  border: 1.5px solid var(--accent); border-radius: 6px;
+  padding: 3px 6px; background: var(--bg); color: var(--text-1); outline: none;
+}
+.kl-col-del {
+  position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  font-size: 13px; line-height: 1; color: var(--text-3);
+  background: transparent; opacity: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.kl-th:hover .kl-col-del { opacity: 1; }
+.kl-col-del:hover { background: #ef4444; color: #fff; opacity: 1; }
+
+/* "Alle markieren" button in column header */
+.kl-all-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700;
+  letter-spacing: .03em; white-space: nowrap;
+  background: var(--bg); color: var(--text-3);
+  border: 1.5px solid var(--border); cursor: pointer;
+  transition: all .13s; margin-top: 4px;
+}
+.kl-all-btn:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb,var(--accent) 8%,var(--bg)); }
+.kl-all-btn.full { background: color-mix(in srgb,#16a34a 10%,var(--bg)); border-color: #16a34a; color: #16a34a; }
+.kl-all-btn.full:hover { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
+
+.kl-add-col-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 20px; line-height: 1;
+  background: var(--bg-2); color: var(--text-3);
+  border: 1.5px dashed var(--border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin: 8px auto; transition: all .15s;
+}
+.kl-add-col-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Progress row ───────────────────────────────────────────────────────── */
+.kl-progress-row td {
+  border-bottom: 2px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-2));
+}
+.kl-td-prog-label {
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-3);
+  padding: 6px 16px; font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-2));
+}
+.kl-td-prog { padding: 6px 4px; }
+.kl-prog {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px; min-width: 84px;
+}
+.kl-prog-num { font-size: 11px; font-weight: 700; color: var(--text-3); }
+.kl-prog-full { color: #16a34a !important; }
+.kl-prog-track {
+  width: 80%; height: 5px;
+  background: var(--border); border-radius: 3px; overflow: hidden;
+}
+.kl-prog-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 3px; transition: width .35s ease;
+}
+
+/* ── Student rows ───────────────────────────────────────────────────────── */
+.kl-row { transition: background .1s; }
+.kl-row:nth-child(even) td { background: color-mix(in srgb, var(--bg-2) 50%, var(--bg)); }
+.kl-row:nth-child(even) .kl-td-name { background: color-mix(in srgb, var(--bg-2) 50%, var(--bg)); }
+.kl-row:hover td { background: color-mix(in srgb, var(--accent) 7%, var(--bg)) !important; }
+.kl-row:hover .kl-td-name { background: color-mix(in srgb, var(--accent) 7%, var(--bg)) !important; }
+
+.kl-td {
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.kl-td-name {
+  padding: 0 16px; height: 46px;
+  font-weight: 500; color: var(--text-1); font-size: 13px;
+  white-space: nowrap;
+}
+.kl-td-check { text-align: center; padding: 0 4px; }
+
+/* ── Checkbox — clearly visible in light mode ───────────────────────────── */
+.kl-checkbox {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 2.5px solid #94a3b8; /* slate-400 — always visible */
+  background: #f8fafc;
+  cursor: pointer; transition: all .15s;
+  position: relative; user-select: none;
+}
+[data-theme="dark"] .kl-checkbox {
+  border-color: #475569;
+  background: #1e293b;
+}
+.kl-checkbox input[type="checkbox"] {
+  position: absolute; opacity: 0; width: 0; height: 0;
+}
+.kl-checkmark {
+  font-size: 17px; color: transparent;
+  font-weight: 800; transition: all .12s;
+  line-height: 1;
+}
+.kl-checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.kl-checkbox.checked .kl-checkmark { color: #fff; }
+.kl-checkbox:hover:not(.checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, #f8fafc);
+}
+[data-theme="dark"] .kl-checkbox:hover:not(.checked) {
+  background: color-mix(in srgb, var(--accent) 15%, #1e293b);
+}
+
+/* ── Date input cell ────────────────────────────────────────────────────── */
+.kl-date-input {
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 7px;
+  font-size: 12px;
+  color: var(--text-2);
+  background: var(--bg);
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s;
+  min-width: 110px;
+  max-width: 130px;
+}
+.kl-date-input:focus { border-color: var(--accent); color: var(--text-1); }
+.kl-date-input.has-value {
+  border-color: #16a34a;
+  color: #16a34a;
+  font-weight: 600;
+  background: color-mix(in srgb, #16a34a 8%, var(--bg));
+}
+[data-theme="dark"] .kl-date-input { border-color: #334155; }
+
+/* ── Modals ─────────────────────────────────────────────────────────────── */
+.kl-modal-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: flex-end;
+  backdrop-filter: blur(3px);
+}
+@media (min-width: 600px) {
+  .kl-modal-backdrop { align-items: center; justify-content: center; }
+}
+.kl-modal {
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 92vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -4px 40px rgba(0,0,0,.22);
+  overflow: hidden;
+}
+@media (min-width: 600px) {
+  .kl-modal { border-radius: 20px; max-width: 540px; max-height: 86vh; }
+  .kl-modal-sm { max-width: 380px !important; }
+  .kl-modal-chat { max-width: 480px !important; }
+}
+.kl-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.kl-modal-title { font-size: 16px; font-weight: 700; color: var(--text-1); margin: 0; }
+.kl-modal-body {
+  flex: 1; overflow-y: auto; padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.kl-modal-footer {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 14px 22px; border-top: 1px solid var(--border); flex-shrink: 0;
+}
+
+/* Labels & inputs inside modal */
+.kl-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-3); display: block;
+}
+.kl-textarea {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg-2); color: var(--text-1);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; line-height: 1.5;
+  font-family: var(--font-mono, monospace);
+  resize: vertical; outline: none; transition: border-color .15s;
+}
+.kl-textarea:focus { border-color: var(--accent); }
+
+/* ── ColumnEditor ───────────────────────────────────────────────────────── */
+.kl-col-editor {
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--bg-2); border-radius: 12px;
+  padding: 10px 12px; border: 1.5px solid var(--border);
+}
+.kl-col-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.kl-col-row-input {
+  flex: 1; font-size: 13px;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+}
+.kl-type-btn {
+  flex-shrink: 0; width: 34px; height: 34px;
+  border-radius: 8px; font-size: 14px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.kl-type-btn.on { background: color-mix(in srgb,var(--accent) 12%,var(--bg)); border-color: var(--accent); }
+.kl-type-btn:hover { border-color: var(--accent); }
+.kl-col-remove {
+  flex-shrink: 0; width: 28px; height: 28px;
+  border-radius: 6px; font-size: 16px; line-height: 1;
+  color: var(--text-3); background: transparent;
+  border: none; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.kl-col-remove:hover { background: #fef2f2; color: #ef4444; }
+.kl-add-col-inline {
+  margin-top: 4px; align-self: flex-start;
+}
+
+/* ── SendChatModal — recipient list ─────────────────────────────────────── */
+.kl-recipient-list {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 220px; overflow-y: auto;
+  background: var(--bg-2); border-radius: 12px;
+  padding: 6px; border: 1.5px solid var(--border);
+}
+.kl-recipient {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 10px;
+  background: transparent; border: none; cursor: pointer;
+  text-align: left; width: 100%; transition: background .1s;
+}
+.kl-recipient:hover { background: var(--bg); }
+.kl-recipient.on {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  outline: 1.5px solid var(--accent);
+}
+.kl-recipient-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent);
+  color: #fff; font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.kl-avatar-all { font-size: 18px; }
+.kl-recipient-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.kl-recipient-info { display: flex; flex-direction: column; min-width: 0; }
+.kl-recipient-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.kl-recipient-email { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Column picker ──────────────────────────────────────────────────────── */
+.kl-col-picker {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--bg-2); border-radius: 12px;
+  padding: 8px 10px; border: 1.5px solid var(--border);
+  max-height: 180px; overflow-y: auto;
+}
+.kl-col-pick-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; transition: background .1s;
+  user-select: none;
+}
+.kl-col-pick-item input[type="checkbox"] {
+  position: absolute; opacity: 0; width: 0; height: 0;
+}
+.kl-col-pick-item:hover { background: var(--bg); }
+.kl-col-pick-item.on { background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+.kl-col-pick-all { border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; margin-bottom: 2px; }
+.kl-col-pick-check {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid #94a3b8; background: #f8fafc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: transparent;
+  transition: all .12s;
+}
+[data-theme="dark"] .kl-col-pick-check { border-color: #475569; background: #1e293b; }
+.kl-col-pick-item.on .kl-col-pick-check {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.kl-col-pick-label { font-size: 13px; color: var(--text-1); flex: 1; }
+.kl-col-pick-warn {
+  font-size: 12px; color: #f59e0b; margin: 0;
+  padding: 4px 0;
+}
+
+/* Chat preview */
+.kl-chat-preview {
+  background: var(--bg-2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 12px; line-height: 1.6;
+  color: var(--text-2); white-space: pre-wrap;
+  font-family: var(--font-mono, monospace);
+  max-height: 160px; overflow-y: auto; margin: 0;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .kl-header { padding: 10px 14px 10px; }
+  .kl-table-wrap { padding: 10px 10px 16px; }
+  .kl-table-card { border-radius: 12px; }
+  .kl-th-name, .kl-td-name { min-width: 130px; max-width: 160px; font-size: 12px; }
+  .kl-td-name { padding: 0 10px; }
+  .kl-th-inner { min-width: 72px; padding: 7px 4px; }
+  .kl-checkbox { width: 32px; height: 32px; border-radius: 8px; }
+  .kl-checkmark { font-size: 15px; }
+  .kl-date-input { min-width: 90px; font-size: 11px; padding: 4px 5px; }
+}

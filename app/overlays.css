@@ -219,3 +219,16 @@
 .welcome-splash p{font-size:clamp(15px,2vw,20px);color:#fff;opacity:.85;font-weight:550}
 @keyframes ws-in{from{opacity:0}to{opacity:1}}
 @keyframes ws-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ── DSGVO-Sektion im Profilmodal ─────────────────────────────────────────── */
+.dsgvo-section{border-top:1px solid var(--border);padding:14px 22px 18px;display:flex;flex-direction:column;gap:8px}
+.dsgvo-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.dsgvo-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Einstellungen: inline im Sidebar (position:absolute relativ zum aside) ─ */
+.sidebar .scrim--settings{display:none}
+.sidebar .modal--settings{position:absolute;inset:0;z-index:50;background:var(--surface);backdrop-filter:none;display:flex;align-items:stretch;justify-content:stretch;padding:0;pointer-events:all}
+.sidebar .modal--settings .modal-card{width:100%;max-width:none;height:100%;border-radius:0;border:none;box-shadow:none;display:flex;flex-direction:column;overflow:hidden}
+.sidebar .modal--settings .modal-body{flex:1;overflow-y:auto;max-height:none}
+.sidebar .modal--settings .modal-head{flex-shrink:0}
+.sidebar .modal--settings .modal-foot{flex-shrink:0}

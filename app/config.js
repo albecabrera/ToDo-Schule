@@ -25,9 +25,18 @@
     /^(10|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\./.test(host);
 
   if (isLocal) {
-    // Lokaler Entwicklungs-Modus: separate Ports.
-    window.ESG_API_BASE = location.protocol + "//" + host + ":8085";
-    window.ESG_WS_URL = "ws://" + host + ":8090";
+    var port = location.port;
+    var isXampp = !port || port === "80" || port === "443" || port === "8082";
+    if (isXampp) {
+      // XAMPP/Apache mode: API en backend/public dentro del mismo subdirectorio.
+      var appBase = location.pathname.substring(0, location.pathname.lastIndexOf("/"));
+      window.ESG_API_BASE = location.origin + appBase + "/backend/public";
+      window.ESG_WS_URL = "ws://" + host + ":8090";
+    } else {
+      // php -S dev mode (start.sh): puertos separados.
+      window.ESG_API_BASE = location.protocol + "//" + host + ":8083";
+      window.ESG_WS_URL = "ws://" + host + ":8090";
+    }
   } else {
     // Produktion: gleiche Domain. Der Reverse-Proxy leitet /api/* an die
     // PHP-API und /ws an den WebSocket-Server weiter.

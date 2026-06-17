@@ -30,6 +30,13 @@ final class Request
 
         $uri  = $_SERVER['REQUEST_URI'] ?? '/';
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+
+        // Strip subdirectory prefix when running under Apache in a subfolder.
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'), '/');
+        if ($scriptDir !== '' && str_starts_with($path, $scriptDir . '/')) {
+            $path = substr($path, strlen($scriptDir));
+        }
+
         $req->path = '/' . trim($path, '/');
 
         parse_str($_SERVER['QUERY_STRING'] ?? '', $req->query);

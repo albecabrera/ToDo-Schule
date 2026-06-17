@@ -40,6 +40,11 @@ final class Database
         if ($driver === 'sqlite') {
             $defaultPath = dirname(__DIR__, 2) . '/database.sqlite';
             $path = Env::get('DB_PATH', $defaultPath);
+            // Fallback: if the configured path is unreachable (e.g. host path in Docker),
+            // use the default path relative to this installation.
+            if (!is_file($path) && !is_writable(dirname((string) $path))) {
+                $path = $defaultPath;
+            }
             $pdo  = new PDO('sqlite:' . $path, null, null, $options);
             // WAL mode: erlaubt parallele Reads während WS-Server schreibt
             $pdo->exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');

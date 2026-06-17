@@ -545,6 +545,11 @@ function ProfileModal({onClose}){
     }
   }
 
+  async function logout(){
+    try { await window.ESG_API.logout(); } catch(e) {}
+    window.location.reload();
+  }
+
   async function save(e){
     e.preventDefault();
     setBusy(true); setMsg(null);
@@ -622,7 +627,7 @@ function ProfileModal({onClose}){
             msg && h("div",{style:{color:"var(--st-high,#c0392b)",fontSize:13,fontWeight:600,marginTop:8}},msg)
           ),
           h("div",{className:"modal-foot"},
-            h("div",{className:"sp"}),
+            h("button",{type:"button",className:"btn btn-outline",onClick:logout,style:{color:"#ef4444",borderColor:"#ef4444",marginRight:"auto"}},"↩ Abmelden"),
             h("button",{type:"button",className:"btn btn-outline",onClick:onClose},"Abbrechen"),
             h("button",{type:"submit",className:"btn btn-primary",disabled:busy},busy?"Speichern…":"Profil speichern")
           )

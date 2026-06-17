@@ -16,7 +16,7 @@ use PDO;
  */
 abstract class Model
 {
-    protected static function db(): PDO
+    public static function db(): PDO
     {
         return Database::connection();
     }

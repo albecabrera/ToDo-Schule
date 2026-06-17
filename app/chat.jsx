@@ -83,6 +83,21 @@ function isAudioFile(name){const e=(name||"").split(".").pop().toLowerCase();ret
 function ChatAttachment({url,name,isMe}){
   const API=(window.ESG_API&&window.ESG_API.baseUrl&&window.ESG_API.baseUrl())||window.ESG_API_BASE||"http://127.0.0.1:8085";
   const fullUrl=API+url;
+  // Klasseliste HTML → interaktive Karte statt Download-Link
+  if(name&&name.startsWith("Klasseliste_")&&name.endsWith(".html")){
+    const displayName=name
+      .replace(/^Klasseliste_/,"")
+      .replace(/_\d{4}-\d{2}-\d{2}\.html$/,"")
+      .replace(/_/g," ");
+    return h("a",{className:"chat-kl-card"+(isMe?" me":""),href:fullUrl,target:"_blank",rel:"noopener noreferrer"},
+      h("span",{className:"chat-kl-icon"},"📋"),
+      h("div",{className:"chat-kl-info"},
+        h("span",{className:"chat-kl-title"},"Klasse "+displayName),
+        h("span",{className:"chat-kl-sub"},"Klasseliste · Tippen zum Öffnen")
+      ),
+      h("span",{className:"chat-kl-arrow"},"→")
+    );
+  }
   // Sprachnachricht / Audio → eingebetteter Player
   if(isAudioFile(name)){
     return h("div",{className:"chat-voice"+(isMe?" me":"")},

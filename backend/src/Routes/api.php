@@ -20,6 +20,7 @@ use App\Controllers\SearchController;
 use App\Controllers\ShareController;
 use App\Controllers\TaskController;
 use App\Controllers\CalendarController;
+use App\Controllers\KlasselisteController;
 use App\Controllers\TeamController;
 use App\Controllers\UserController;
 
@@ -62,6 +63,13 @@ return (static function (): Router {
     $r->patch('/api/admin/users/:id',        [AdminController::class, 'update'],        ['auth' => true, 'admin' => true]);
     $r->post('/api/admin/users/:id/reset',   [AdminController::class, 'resetPassword'], ['auth' => true, 'admin' => true]);
     $r->delete('/api/admin/users/:id',       [AdminController::class, 'destroy'],       ['auth' => true, 'admin' => true]);
+
+    // --- Klasselisten ---------------------------------------------------------
+    $r->get('/api/klasselisten',        [KlasselisteController::class, 'index'],   ['auth' => true]);
+    $r->post('/api/klasselisten',       [KlasselisteController::class, 'store'],   ['auth' => true]);
+    $r->get('/api/klasselisten/:id',    [KlasselisteController::class, 'show'],    ['auth' => true]);
+    $r->patch('/api/klasselisten/:id',  [KlasselisteController::class, 'update'],  ['auth' => true]);
+    $r->delete('/api/klasselisten/:id', [KlasselisteController::class, 'destroy'], ['auth' => true]);
 
     // --- Aufgaben -------------------------------------------------------------
     $r->get('/api/calendar.ics', [CalendarController::class, 'ics']);

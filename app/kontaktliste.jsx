@@ -1,7 +1,7 @@
 // app/kontaktliste.jsx — Kontaktliste Klasse 5d
 (function () {
 "use strict";
-const { useState, useMemo } = React;
+const { useState, useMemo, useRef } = React;
 const h = React.createElement;
 
 const KONTAKTE_5D = [
@@ -35,12 +35,163 @@ const KONTAKTE_5D = [
   { nachname:"Tallouz",         vorname:"Hanin K. M. M.",   telMutter:"",              telVater:"017683242428", adresse:"", sonstiges:"Arabisch / Deutsch" },
 ];
 
-function TelLink({ number }) {
-  if (!number) return h("span", { className: "kl-no-data" }, "—");
-  const clean = number.replace(/\s/g, "");
-  return h("a", { className: "kl-tel", href: `tel:${clean}` }, number);
+// Returns merged data: base fields + extras overrides
+function mergeKontakt(s, ex) {
+  const telMutterArr = ex.telMutterArr ?? (s.telMutter ? [s.telMutter] : []);
+  const telVaterArr  = ex.telVaterArr  ?? (s.telVater  ? [s.telVater]  : []);
+  return {
+    ...s,
+    mutterName:  ex.mutterName  ?? "",
+    vaterName:   ex.vaterName   ?? "",
+    telMutterArr,
+    telVaterArr,
+    adresse:     ex.adresse     ?? s.adresse,
+    sonstiges:   ex.sonstiges   ?? s.sonstiges,
+  };
 }
 
+function TelList({ numbers }) {
+  if (!numbers || numbers.length === 0) return h("span", { className: "kl-no-data" }, "—");
+  return h("div", { className: "klk-tel-list" },
+    numbers.map((n, i) => {
+      const clean = n.replace(/\s/g, "");
+      return h("a", { key: i, className: "kl-tel", href: `tel:${clean}` }, n);
+    })
+  );
+}
+
+/* ── Edit Modal ─────────────────────────────────────────────────────────── */
+function EditModal({ kontakt, onSave, onClose }) {
+  const [mutterName,  setMutterName]  = useState(kontakt.mutterName);
+  const [vaterName,   setVaterName]   = useState(kontakt.vaterName);
+  const [telMutterArr,setTelMutterArr]= useState([...kontakt.telMutterArr]);
+  const [telVaterArr, setTelVaterArr] = useState([...kontakt.telVaterArr]);
+  const [adresse,     setAdresse]     = useState(kontakt.adresse);
+  const [sonstiges,   setSonstiges]   = useState(kontakt.sonstiges);
+
+  function addTel(list, setList) {
+    setList([...list, ""]);
+  }
+  function updateTel(list, setList, i, val) {
+    const next = [...list];
+    next[i] = val;
+    setList(next);
+  }
+  function removeTel(list, setList, i) {
+    setList(list.filter((_, j) => j !== i));
+  }
+
+  function handleSave() {
+    onSave({
+      mutterName: mutterName.trim(),
+      vaterName:  vaterName.trim(),
+      telMutterArr: telMutterArr.map(t => t.trim()).filter(Boolean),
+      telVaterArr:  telVaterArr.map(t => t.trim()).filter(Boolean),
+      adresse:    adresse.trim(),
+      sonstiges:  sonstiges.trim(),
+    });
+    onClose();
+  }
+
+  function TelInputs({ label, list, setList }) {
+    return h("div", { className: "klk-modal-field" },
+      h("label", { className: "klk-modal-label" }, label),
+      list.map((n, i) =>
+        h("div", { key: i, className: "klk-tel-row" },
+          h("input", {
+            className: "klk-modal-input klk-tel-input",
+            value: n,
+            placeholder: "+49 …",
+            onChange: e => updateTel(list, setList, i, e.target.value),
+          }),
+          h("button", {
+            className: "klk-tel-remove",
+            onClick: () => removeTel(list, setList, i),
+            title: "Entfernen",
+          }, "×")
+        )
+      ),
+      h("button", { className: "klk-tel-add", onClick: () => addTel(list, setList) },
+        "+ Nummer hinzufügen"
+      )
+    );
+  }
+
+  return h("div", { className: "modal", onClick: e => { if (e.target === e.currentTarget) onClose(); } },
+    h("div", { className: "klk-modal-card" },
+      h("div", { className: "klk-modal-head" },
+        h("span", null, `✏️ ${kontakt.nachname}, ${kontakt.vorname}`),
+        h("button", { className: "iconbtn", onClick: onClose, "aria-label": "Schließen" },
+          h("span", null, "×")
+        )
+      ),
+
+      h("div", { className: "klk-modal-body" },
+
+        // Mutter section
+        h("div", { className: "klk-modal-section" },
+          h("div", { className: "klk-modal-section-title" }, "👩 Mutter"),
+          h("div", { className: "klk-modal-field" },
+            h("label", { className: "klk-modal-label" }, "Name (Vor- und Nachname)"),
+            h("input", {
+              className: "klk-modal-input",
+              value: mutterName,
+              placeholder: "z. B. Maria García",
+              onChange: e => setMutterName(e.target.value),
+            })
+          ),
+          h(TelInputs, { label: "Telefonnummern", list: telMutterArr, setList: setTelMutterArr })
+        ),
+
+        // Vater section
+        h("div", { className: "klk-modal-section" },
+          h("div", { className: "klk-modal-section-title" }, "👨 Vater"),
+          h("div", { className: "klk-modal-field" },
+            h("label", { className: "klk-modal-label" }, "Name (Vor- und Nachname)"),
+            h("input", {
+              className: "klk-modal-input",
+              value: vaterName,
+              placeholder: "z. B. Carlos García",
+              onChange: e => setVaterName(e.target.value),
+            })
+          ),
+          h(TelInputs, { label: "Telefonnummern", list: telVaterArr, setList: setTelVaterArr })
+        ),
+
+        // Adresse & Sonstiges
+        h("div", { className: "klk-modal-section" },
+          h("div", { className: "klk-modal-section-title" }, "🏠 Adresse & Notizen"),
+          h("div", { className: "klk-modal-field" },
+            h("label", { className: "klk-modal-label" }, "Adresse"),
+            h("input", {
+              className: "klk-modal-input",
+              value: adresse,
+              placeholder: "Straße, PLZ Ort",
+              onChange: e => setAdresse(e.target.value),
+            })
+          ),
+          h("div", { className: "klk-modal-field" },
+            h("label", { className: "klk-modal-label" }, "Sonstiges / Allergien"),
+            h("textarea", {
+              className: "klk-modal-textarea",
+              value: sonstiges,
+              placeholder: "Allergien, Krankheiten, Sprache…",
+              rows: 3,
+              onChange: e => setSonstiges(e.target.value),
+            })
+          )
+        )
+      ),
+
+      h("div", { className: "klk-modal-foot" },
+        h("button", { className: "klk-modal-cancel", onClick: onClose }, "Abbrechen"),
+        h("button", { className: "klk-modal-save", onClick: handleSave }, "Speichern")
+      )
+    )
+  );
+}
+
+/* ── Main view ─────────────────────────────────────────────────────────── */
 function KontaktlisteView() {
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState(null);
@@ -54,21 +205,37 @@ function KontaktlisteView() {
     localStorage.setItem("kl-extras-5d", JSON.stringify(next));
   }
 
+  const merged = useMemo(() =>
+    KONTAKTE_5D.map(s => mergeKontakt(s, extras[s.nachname] || {})),
+    [extras]
+  );
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return KONTAKTE_5D;
-    return KONTAKTE_5D.filter(s =>
+    if (!q) return merged;
+    return merged.filter(s =>
       `${s.nachname} ${s.vorname}`.toLowerCase().includes(q) ||
-      (s.sonstiges || "").toLowerCase().includes(q) ||
-      ((extras[s.nachname]?.adresse || s.adresse) || "").toLowerCase().includes(q)
+      (s.mutterName || "").toLowerCase().includes(q) ||
+      (s.vaterName  || "").toLowerCase().includes(q) ||
+      (s.sonstiges  || "").toLowerCase().includes(q) ||
+      (s.adresse    || "").toLowerCase().includes(q) ||
+      s.telMutterArr.some(t => t.includes(q)) ||
+      s.telVaterArr.some(t => t.includes(q))
     );
-  }, [search, extras]);
+  }, [search, merged]);
 
-  const hasWarning = s => /⚠️/.test(s.sonstiges) || /⚠️/.test(extras[s.nachname]?.sonstiges || "");
+  const editKontakt = editId ? merged.find(s => s.nachname === editId) : null;
+  const hasWarning = s => /⚠️/.test(s.sonstiges || "");
 
   return h("div", { className: "klk-screen" },
 
-    // ── Header ────────────────────────────────────────────────────────────────
+    editKontakt && h(EditModal, {
+      kontakt: editKontakt,
+      onSave: patch => saveExtra(editKontakt.nachname, patch),
+      onClose: () => setEditId(null),
+    }),
+
+    // Header
     h("div", { className: "klk-header" },
       h("div", { className: "klk-header-top" },
         h("h1", { className: "klk-title" }, "Kontaktliste — Klasse 5d"),
@@ -78,21 +245,21 @@ function KontaktlisteView() {
         h("span", { className: "klk-search-icon" }, "🔍"),
         h("input", {
           className: "klk-search",
-          placeholder: "Namen, Adresse, Notiz suchen…",
+          placeholder: "Namen, Adresse, Telefon, Notiz suchen…",
           value: search,
           onChange: e => setSearch(e.target.value),
         })
       )
     ),
 
-    // ── Table ─────────────────────────────────────────────────────────────────
+    // Table
     h("div", { className: "klk-table-wrap" },
       h("table", { className: "klk-table" },
         h("thead", null,
           h("tr", null,
             h("th", { className: "klk-th klk-th-name" }, "Name"),
-            h("th", { className: "klk-th" }, "📱 Tel. Mutter"),
-            h("th", { className: "klk-th" }, "📱 Tel. Vater"),
+            h("th", { className: "klk-th" }, "👩 Mutter"),
+            h("th", { className: "klk-th" }, "👨 Vater"),
             h("th", { className: "klk-th klk-th-addr" }, "🏠 Adresse"),
             h("th", { className: "klk-th klk-th-notes" }, "📝 Sonstiges"),
             h("th", { className: "klk-th klk-th-edit" }, "")
@@ -100,13 +267,9 @@ function KontaktlisteView() {
         ),
         h("tbody", null,
           filtered.map(s => {
-            const ex = extras[s.nachname] || {};
-            const adresse   = ex.adresse   ?? s.adresse;
-            const sonstiges = ex.sonstiges ?? s.sonstiges;
-            const isEdit    = editId === s.nachname;
-            const warn      = hasWarning({ sonstiges, ...s });
-
+            const warn = hasWarning(s);
             return h("tr", { key: s.nachname, className: `klk-row${warn ? " klk-warn" : ""}` },
+
               // Name
               h("td", { className: "klk-td klk-td-name" },
                 h("div", { className: "klk-name" },
@@ -114,43 +277,44 @@ function KontaktlisteView() {
                   h("span", { className: "klk-vorname" }, " " + s.vorname)
                 )
               ),
-              // Tel Mutter
-              h("td", { className: "klk-td" }, h(TelLink, { number: s.telMutter })),
-              // Tel Vater
-              h("td", { className: "klk-td" }, h(TelLink, { number: s.telVater })),
+
+              // Mutter
+              h("td", { className: "klk-td" },
+                h("div", { className: "klk-contact-cell" },
+                  s.mutterName && h("div", { className: "klk-contact-name" }, s.mutterName),
+                  h(TelList, { numbers: s.telMutterArr })
+                )
+              ),
+
+              // Vater
+              h("td", { className: "klk-td" },
+                h("div", { className: "klk-contact-cell" },
+                  s.vaterName && h("div", { className: "klk-contact-name" }, s.vaterName),
+                  h(TelList, { numbers: s.telVaterArr })
+                )
+              ),
+
               // Adresse
               h("td", { className: "klk-td klk-td-addr" },
-                isEdit
-                  ? h("input", {
-                      className: "klk-edit-input",
-                      defaultValue: adresse,
-                      placeholder: "Adresse…",
-                      onBlur: e => saveExtra(s.nachname, { adresse: e.target.value }),
-                    })
-                  : adresse
-                    ? h("span", null, adresse)
-                    : h("span", { className: "kl-no-data" }, "—")
+                s.adresse
+                  ? h("span", null, s.adresse)
+                  : h("span", { className: "kl-no-data" }, "—")
               ),
+
               // Sonstiges
               h("td", { className: "klk-td klk-td-notes" },
-                isEdit
-                  ? h("input", {
-                      className: "klk-edit-input",
-                      defaultValue: sonstiges,
-                      placeholder: "Allergien, Krankheiten…",
-                      onBlur: e => saveExtra(s.nachname, { sonstiges: e.target.value }),
-                    })
-                  : sonstiges
-                    ? h("span", { className: warn ? "klk-warn-text" : "" }, sonstiges)
-                    : h("span", { className: "kl-no-data" }, "—")
+                s.sonstiges
+                  ? h("span", { className: warn ? "klk-warn-text" : "" }, s.sonstiges)
+                  : h("span", { className: "kl-no-data" }, "—")
               ),
-              // Edit button
+
+              // Edit
               h("td", { className: "klk-td klk-td-edit" },
                 h("button", {
-                  className: `klk-edit-btn${isEdit ? " active" : ""}`,
-                  onClick: () => setEditId(isEdit ? null : s.nachname),
-                  title: isEdit ? "Fertig" : "Adresse / Notiz bearbeiten",
-                }, isEdit ? "✓" : "✏️")
+                  className: "klk-edit-btn",
+                  onClick: () => setEditId(s.nachname),
+                  title: "Kontakt bearbeiten",
+                }, "✏️")
               )
             );
           })

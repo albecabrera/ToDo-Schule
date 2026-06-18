@@ -2,7 +2,7 @@
 //  ToDo-Schule — Notizen & Planungen (kollegiales Teilen)
 // ========================================================================
 (function(){
-const {useState,useMemo} = React;
+const {useState,useMemo,useEffect,useRef} = React;
 const {createElement:h,Fragment} = React;
 const {TEAMS, USERS, ME} = window.ESG_DATA;
 
@@ -161,9 +161,21 @@ function NoteEditor({note, onClose, onSave, onDelete}){
    fertig. Jede Änderung speichert sofort (still, ohne Toast).            */
 function BugChecklistModal({note, onSave, onClose}){
   const [text,setText] = useState("");
-  const lines = (note && note.content ? note.content : "").split("\n").filter(l=>l.trim()!=="");
+  const [lines,setLines] = useState(()=>
+    (note && note.content ? note.content : "").split("\n").filter(l=>l.trim()!=="")
+  );
+
+  // Sync incoming note changes (e.g. WS update) without overwriting local edits in flight
+  const lastNoteRef = useRef(note);
+  useEffect(()=>{
+    if(note && note !== lastNoteRef.current){
+      lastNoteRef.current = note;
+      setLines((note.content||"").split("\n").filter(l=>l.trim()!==""));
+    }
+  },[note]);
 
   function commit(nextLines){
+    setLines(nextLines);
     onSave({...(note || {kind:"note", title:"Bugs", teamId:null}), content:nextLines.join("\n")}, {silent:true});
   }
   function add(){

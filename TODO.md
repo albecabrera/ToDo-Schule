@@ -1,7 +1,7 @@
 # ✅ TODO — ToDo-Schule
 
-Estado actual: **app completamente funcional en local (XAMPP/PHP built-in)**  
-Pendiente: infraestructura de servidor para producción pública con HTTPS.
+Estado actual: **app funcional en local (XAMPP/Docker)**, optimizada y lista para subir.
+Destino: **hosting compartido** (solo Apache + PHP, sin SSH/daemons).
 
 ---
 
@@ -9,129 +9,110 @@ Pendiente: infraestructura de servidor para producción pública con HTTPS.
 
 ### Módulo principal
 - [x] Autenticación JWT (login, refresh, logout, reset password)
-- [x] Perfil de usuario: foto (HEIC soportado), nombre, contraseña
-- [x] **Abmelden** — botón de cierre de sesión en el modal de perfil
+- [x] Perfil de usuario: foto (HEIC soportado, **carga lazy de heic2any**), nombre, contraseña
+- [x] **Abmelden** — cierre de sesión en el modal de perfil
+- [x] Sesión persistente (refresh no devuelve al login)
 - [x] Modo claro/oscuro (toggle + sigue preferencia del sistema)
-- [x] Bienvenida según hora del día (incluyendo „Schlafenszeit 🌙")
-- [x] Panel de administración (crear/desactivar usuarios, resetear contraseñas)
+- [x] Bienvenida según hora del día
 
 ### Aufgaben (Tareas)
 - [x] CRUD completo con prioridades, fechas, asignaciones, equipos
-- [x] Vista lista y tablero Kanban
-- [x] Subtareas, etiquetas, recordatorios
-- [x] Tareas recurrentes (diaria/semanal/mensual)
-- [x] Comentarios con notificaciones en tiempo real
-- [x] Adjuntos por tarea
-- [x] Audit trail por tarea
+- [x] Vista lista, tablero Kanban, calendario, Vollbild
+- [x] Subtareas, etiquetas, recordatorios, tareas recurrentes
+- [x] Comentarios, adjuntos por tarea
+- [x] Audit trail (escritura del log; sin UI de lectura)
 - [x] Share links (tareas públicas por token)
-- [x] Exportar calendario iCal (.ics) — suscribible en Google/Outlook
+- [x] Exportar calendario iCal (.ics)
 
 ### Notizen (Notas)
-- [x] Markdown con checklists (`- [ ]`/`- [x]`) clicables
+- [x] Markdown con checklists clicables
 - [x] Privadas o compartidas con equipo
-- [x] Live-sync vía WebSocket
+- [x] Bugs-Checkliste (botón "Bugs" en topbar) con guardado optimista
 
-### Klasseliste (Checkliste cooperativa) — nuevo
-- [x] Tabla de alumnos con columnas ✓/📅/🔢 configurables
-- [x] **Spaltentypen**: ✓ Checkbox · 📅 Datum · 🔢 Note 1-6 con color (verde/ámbar/rojo) + promedio
-- [x] **Schüler·in-Profil** — click en nombre → panel lateral con progreso cross-list
-- [x] **Elternkontakt-Log** — historial de contactos de padres por alumno/a (📞 Email Persönlich Schriftlich + nota)
-- [x] Echtzeit-Sync entre Alberto y Loana (WS broadcast)
-- [x] **Presencia en tiempo real** — indicador pulsante „Loana ist gerade aktiv"
-- [x] **Filtro „Fehlend"** — solo muestra alumnos con entradas pendientes
-- [x] **Konfetti 🎉** — animación CSS cuando una columna llega al 100%
-- [x] **Offline** — lista cargada desde caché SW cuando no hay red
-- [x] + Alle / − Alle (marcar/desmarcar toda una columna)
-- [x] Scroll horizontal y vertical en tabla
-- [x] Tipo de columna: ✓ Checkbox o 📅 Fecha
-- [x] Inline renombrar columnas
-- [x] Exportar PDF (imprimir), Word (.doc)
-- [x] Compartir por chat (con selección de columnas y destinatario)
-- [x] Compartir por email (mailto:)
-- [x] Adjunto HTML interactivo en el chat
-- [x] CRUD de listas (crear, editar, borrar)
-- [x] Crear usuario Loana Venedey (loana.venedey@esg.nrw.schule / lehrerinve)
+### Klasse
+- [x] **Klassenliste** — checklist cooperativa: columnas ✓/📅/🔢, drag & drop de columnas, búsqueda de alumnos, fila verde al completar, toggle de fila, persistencia en DB
+- [x] **Schüler·in-Profil** — panel lateral con progreso cross-list
+- [x] **Elternkontakt-Log** — historial de contactos por alumno/a (📞 Email Persönlich Schriftlich + nota)
+- [x] **Kontaktliste 5d** — datos de contacto: nombre madre/padre, **múltiples teléfonos editables**, dirección, Sonstiges; modal de edición; búsqueda
+- [x] Exportar PDF/Word, compartir por chat/email
 
-### Klassenbuch & Kalender — nuevo
-- [x] **Klassenbuch 📖** — cuaderno de clase digital: fecha, tema, contenido, ausencias (checkboxes desde Klasseliste), notas
-- [x] **Kalender 📅** — vista mensual de todas las tareas con puntos de color (rojo=vencido, verde=hecho); click en día → lista de tareas
-- [x] **Benachrichtigungen 🔔** — centro de notificaciones completo: filtro Todo/No leído, agrupar por día, Auto-Refresh 60 s, marcar leído/todo
+### Kalender & Benachrichtigungen
+- [x] **Kalender 📅** — vista mensual de tareas con puntos de color
+- [x] **Benachrichtigungen 🔔** — centro de notificaciones (filtro, agrupar por día, auto-refresh)
 
 ### Chat
 - [x] Canal grupal + mensajes directos (DM)
-- [x] Indicador „schreibt…", lesebestätigungen (DM ✓✓ / grupo „gelesen von N")
-- [x] Editar/borrar mensajes
-- [x] Adjuntos de archivos
-- [x] Emoji-Reaktionen, @Erwähnungen
-- [x] Respuestas/citar, anpinnen
-- [x] Búsqueda en chat + búsqueda global
-- [x] „Zuletzt aktiv" por usuario
+- [x] „schreibt…", lesebestätigungen, editar/borrar, adjuntos
+- [x] Emoji-Reaktionen, @Erwähnungen, responder/citar, anpinnen
+- [x] Búsqueda en chat
+- [ ] ⚠️ **Tiempo real solo con WebSocket** — en hosting compartido los mensajes llegan al recargar (ver nota de despliegue)
 
-### Videoanruf
-- [x] WebRTC 1:1 (video + audio, P2P con STUN)
-- [x] Overlay de llamada con controles y picture-in-picture
-
-### Sistema / PWA
-- [x] **Web Push (VAPID)** — notificaciones push (asignaciones, comentarios, chat, **Klasseliste-Änderungen**)
-- [x] **Bottom Navigation Bar (móvil ≤768px)** — Aufgaben · Klasse · Chat · Notizen
+### Navegación / PWA
+- [x] **Secciones reordenables por drag & drop** (Klasse / Aufgaben / Kollegium / Bereiche), orden en localStorage
+- [x] **Bottom Navigation (móvil ≤768px)** — clicable vía bridge `ESG_SS`
 - [x] **Offline-first** — Outbox en IndexedDB + Background Sync
-- [x] **Búsqueda global** — Aufgaben + Notizen + Adjuntos vía SQLite LIKE
-- [x] **Feed de actividad** — timeline filtrable por área y usuario
+- [x] **Web Push (VAPID)** — notificaciones push
 - [x] **DSGVO** — exportar datos (JSON) + eliminar cuenta
-- [x] **Backups automáticos** SQLite con retención configurable
-- [x] **Resumen semanal** por email (`backend/cron/weekly-digest.php`, lunes 08:00)
-- [x] Command Palette ⌘K
+- [x] **Backups automáticos** SQLite con retención
 - [x] a11y (ARIA, foco visible, skip-link, reduced-motion)
-- [x] Botón PWA „App installieren" propio
-- [x] SQLite (migrado desde MySQL) — portátil, sin proceso servidor
+- [x] Botón PWA „App installieren"
+- [x] SQLite (portátil, sin proceso servidor)
+- [x] **manifest completo** (iconos 192/512/maskable, standalone, theme)
+- [x] **Service Worker** con precache verificado
+
+### 🧹 Limpieza realizada (optimización)
+- [x] heic2any (1.3 MB) → carga lazy solo al subir avatar HEIC
+- [x] Eliminados módulos muertos: palette, search, activity, admin, shell, call
+- [x] Eliminada videollamada WebRTC (frontend + backend `callSignal`)
+- [x] Eliminado Klassenbuch (frontend + backend)
+- [x] Backend: borrados controllers Search/Activity/Admin/Klassenbuch/Audit
+- [x] Schema: agregada tabla `elternkontakte` faltante
+- [x] Service Worker limpio (sin referencias muertas, precache válido)
 
 ---
 
-## 🔴 Infraestructura — Sin esto no hay producción pública
+## 🚀 Despliegue en hosting compartido — PASOS
 
-- [ ] **Dominio** — apuntar DNS A → IP del VPS
-- [ ] **HTTPS** — `sudo certbot --nginx -d dominio.de`
+> Config: `app/config.js` → `DEPLOY_MODE = "shared"` (ya configurado).
+> Limitación: **sin WebSocket** → chat y presencia se actualizan al recargar.
+> Tareas, notas, listas, login, push: funcionan al 100%.
 
-## 🟠 Configuración del servidor
-
-- [ ] **nginx** con:
-  - [ ] Frontend estático desde raíz del repo
-  - [ ] Proxy `/api/` → PHP en `127.0.0.1:8085`
-  - [ ] Proxy `/ws` → WebSocket en `127.0.0.1:8090` (con headers `Upgrade`)
-  - [ ] `Cache-Control: no-cache` para `sw.js`
-- [ ] **PHP 8.1+** en el servidor
-- [ ] **WebSocket como servicio systemd** (`todo-schule-ws.service`)
-- [ ] **VAPID generado** — `php backend/bin/generate-vapid.php` → pegar en `.env`
-- [ ] **`backend/.env`** en el servidor:
-  - [ ] `JWT_SECRET` nuevo (`php -r "echo bin2hex(random_bytes(32));"`)
-  - [ ] `SQLITE_PATH` con ruta absoluta
-  - [ ] `ALLOWED_ORIGIN=https://dominio.de`
-  - [ ] `VAPID_*` (del paso anterior)
-- [ ] **Permisos de escritura** para `www-data` en:
+- [ ] **1. Subdominio** — crear `todo.tu-escuela.de` apuntando a la carpeta de la app (recomendado sobre subdirectorio)
+- [ ] **2. HTTPS** — activar SSL en el panel del hosting (Let's Encrypt / AutoSSL). **Obligatorio** para PWA + Push
+- [ ] **3. Subir archivos** — todo el repo vía FTP/SFTP/Git, con `.htaccess` raíz incluido
+- [ ] **4. PHP 8.1+** — seleccionar en el panel; extensiones `pdo_sqlite`, `mbstring`, `openssl`
+- [ ] **5. `.htaccess` de `backend/public/`** — confirmar que `AllowOverride All` esté activo (la mayoría de hosts lo permiten)
+- [ ] **6. Crear `backend/.env`** (nunca commitear):
+  - [ ] `APP_DEBUG=false`
+  - [ ] `ALLOWED_ORIGIN=https://todo.tu-escuela.de`
+  - [ ] `DB_DRIVER=sqlite` + `DB_PATH=` (ruta absoluta a `backend/database.sqlite`)
+  - [ ] `JWT_ACCESS_SECRET` + `JWT_REFRESH_SECRET` (`php -r "echo bin2hex(random_bytes(32));"`)
+- [ ] **7. Inicializar DB** — `sqlite3 backend/database.sqlite < backend/schema.sqlite.sql` (vía SSH si hay, o phpMyAdmin-SQLite/Adminer del panel)
+- [ ] **8. Permisos de escritura** (chmod 775 vía FTP o panel):
   - [ ] `backend/database.sqlite` (+ `-wal`, `-shm`)
-  - [ ] `backend/public/avatars/`
-  - [ ] `backend/public/chat-files/`
-  - [ ] `backend/uploads/`
-- [ ] **Crons activados** en el servidor:
-  - [ ] `0 8 * * 1 php /ruta/backend/cron/weekly-digest.php >> /var/log/esg-digest.log`
-  - [ ] `0 2 * * * php /ruta/backend/bin/backup.php --keep=7 >> /var/log/esg-backup.log`
-- [ ] (Opcional) **TURN server** para videollamadas tras NATs estrictos
+  - [ ] `backend/public/avatars/`, `backend/public/chat-files/`, `backend/uploads/`, `backend/storage/`
+- [ ] **9. VAPID (push)** — generar `backend/storage/vapid.json` (ver DEPLOY.md §8), pegar `VAPID_PUBLIC_KEY` en `.env`
+- [ ] **10. Cron (panel del hosting)**:
+  - [ ] Backup diario: `php /ruta/backend/bin/backup.php --keep=30`
+  - [ ] Recordatorios: `php /ruta/backend/cron-reminders.php` (cada minuto o cada 5 min)
+- [ ] **11. Primer usuario** — `POST /api/auth/register` o insertar en SQLite (ver DEPLOY.md §9)
 
-## 🟡 Verificación final
+## 🟡 Verificación post-despliegue
 
-- [ ] `https://dominio.de/ToDo-Schule.html` carga correctamente
-- [ ] Lighthouse PWA: todo en verde
-- [ ] Login funciona (API alcanzable vía HTTPS)
-- [ ] Chat y Klasseliste en tiempo real funcionan (WS vía `wss://`)
-- [ ] Push notifications llegan con app en segundo plano
-- [ ] Offline: cerrar datos → app-shell y lista cargan desde caché
+- [ ] `https://todo.tu-escuela.de/` carga la app (`.htaccess` sirve ToDo-Schule.html)
+- [ ] Login funciona (API alcanzable en `/backend/public/api/...`)
+- [ ] `https://todo.tu-escuela.de/backend/database.sqlite` → **403** (protegido por `.htaccess`)
+- [ ] Lighthouse PWA en verde, botón "Instalar" aparece
+- [ ] SW sin errores en DevTools → Application → Service Workers
+- [ ] Push llega con app en segundo plano
+- [ ] Offline: cerrar red → app-shell y datos cargan desde caché
 
 ---
 
-## 💡 Ideas futuras (sin prioridad fijada)
+## 💡 Ideas futuras
 
-- [ ] Videollamada grupal (3+ participantes)
-- [ ] Más clases en Klasseliste (6a, 7b, etc.) con gestión por año escolar
-- [ ] Exportar Klasseliste directamente a PDF desde el servidor (sin diálogo de impresión)
-- [ ] Historial de cambios por fila en la Klasseliste
-- [ ] App nativa (wrapper Capacitor/Tauri) para notificaciones más fiables en iOS
+- [ ] **Polling de respaldo para chat** — sin WS, recargar mensajes cada X seg (haría el chat usable en hosting compartido)
+- [ ] manifest: maskable-192 + screenshots (mejora UI de instalación en Android)
+- [ ] Más clases en Klassenliste (6a, 7b…) con gestión por año escolar
+- [ ] Historial de cambios por fila en la Klassenliste
+- [ ] App nativa (wrapper Capacitor) para push más fiable en iOS

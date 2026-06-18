@@ -1,6 +1,19 @@
 # ToDo-Schule — Guía de despliegue en producción
 
-Arquitectura: frontend estático + PHP API (puerto 8085) + PHP WebSocket (puerto 8090) + SQLite. Sin Composer, sin npm, sin build step.
+Arquitectura: frontend estático + PHP API + SQLite (+ WebSocket opcional). Sin Composer, sin npm, sin build step.
+
+## ⚠️ Elegí tu camino
+
+| | **Shared Hosting** | **VPS / servidor propio** |
+|---|---|---|
+| Requisitos | Solo Apache + PHP + FTP/panel | SSH, root, systemd |
+| `DEPLOY_MODE` en `config.js` | `"shared"` | `"vps"` |
+| API | Servida por Apache vía `backend/public/.htaccess` | `php -S` en systemd + proxy nginx |
+| WebSocket (chat/presencia en vivo) | ❌ no disponible (mensajes al recargar) | ✅ daemon systemd + proxy |
+| Guía | **`TODO.md` → "Despliegue en hosting compartido"** | **este documento (secciones 1-12)** |
+| Funciona igual | Tareas, notas, listas, login, push, offline | + Echtzeit |
+
+> **Tu caso es Shared Hosting.** Seguí los pasos de `TODO.md`. Este DEPLOY.md (nginx/systemd) es solo si algún día migrás a un VPS. El `.htaccess` raíz y `backend/public/.htaccess` ya vienen listos en el repo.
 
 ---
 

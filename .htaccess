@@ -1,0 +1,41 @@
+# =============================================================================
+#  ToDo-Schule — Apache-Konfiguration für Shared Hosting
+#  Diese Datei in den DocumentRoot der App legen (wo ToDo-Schule.html liegt).
+#  mod_rewrite muss aktiv sein (auf den meisten Hostern Standard).
+# =============================================================================
+
+# App als Startseite ausliefern (statt Verzeichnislisting / index.html).
+DirectoryIndex ToDo-Schule.html
+
+# Kein Verzeichnislisting.
+Options -Indexes
+
+RewriteEngine On
+
+# ── Backend-Internals sperren — NUR backend/public/ ist öffentlich ──────────
+#   backend/src, backend/bin, backend/database.sqlite, backend/.env … → 403
+RewriteRule ^backend/(?!public/) - [F,L]
+
+# ── storage/ (Backups, Rate-Limit, VAPID-Key) komplett sperren ──────────────
+RewriteRule ^storage/ - [F,L]
+
+# ── Sensible Dateitypen überall sperren ─────────────────────────────────────
+RewriteRule (^|/)\.(env|git|sqlite|sqlite3)(/|$) - [F,L]
+
+# ── Service Worker nie cachen (sonst klebt alte Version) ────────────────────
+<IfModule mod_headers.c>
+  <FilesMatch "sw\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# ── Statische Assets aggressiv cachen ───────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css            "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType image/png           "access plus 30 days"
+  ExpiresByType image/svg+xml       "access plus 30 days"
+  ExpiresByType image/jpeg          "access plus 30 days"
+  ExpiresByType font/woff2          "access plus 30 days"
+</IfModule>

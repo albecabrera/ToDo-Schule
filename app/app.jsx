@@ -12,7 +12,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 }/*EDITMODE-END*/;
 
 /* ── Echtzeit & Push ─────────────────────────────────────────────────── */
-const WS_URL = window.ESG_WS_URL || "ws://127.0.0.1:8090";
+// null/leer = Echtzeit deaktiviert (z. B. Shared Hosting ohne WS-Daemon).
+const WS_URL = window.ESG_WS_URL === undefined ? "ws://127.0.0.1:8090" : window.ESG_WS_URL;
 
 /* Service Worker registrieren (Basis für Push-Notifications). */
 function registerServiceWorker(){
@@ -593,6 +594,7 @@ function App(){
     }
 
     function connect(){
+      if(!WS_URL) return; // Echtzeit deaktiviert (Shared Hosting) — App läuft per REST weiter.
       const token = localStorage.getItem("accessToken");
       if(!token) return;
       ws = new WebSocket(`${WS_URL}/?token=${encodeURIComponent(token)}`);

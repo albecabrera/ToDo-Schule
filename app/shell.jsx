@@ -308,13 +308,7 @@ function Sidebar({
         h(Icon,{n:"list",size:17}),
         h("span",{className:"grow"},"Klassenliste 📋")
       ),
-      h("button",{
-        className:`navitem ${section==="klassenbuch"?"on":""}`,
-        onClick:()=>{ setSection("klassenbuch"); onClose(); }
-      },
-        h(Icon,{n:"bookOpen",size:17}),
-        h("span",{className:"grow"},"Klassenbuch 📖")
-      ),
+
       h("button",{
         className:`navitem ${section==="kontaktliste"?"on":""}`,
         onClick:()=>{ setSection("kontaktliste"); onClose(); }

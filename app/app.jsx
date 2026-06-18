@@ -659,8 +659,7 @@ function App(){
               ? (window.ChatView ? h(window.ChatView,{}) : null)
               : section==="klasseliste"
               ? (window.KlasselisteScreen ? h(window.KlasselisteScreen,{}) : null)
-              : section==="klassenbuch"
-              ? (window.KlassenbuchView ? h(window.KlassenbuchView,{}) : null)
+
               : section==="kontaktliste"
               ? (window.KontaktlisteView ? h(window.KontaktlisteView,{}) : null)
               : h(Fragment,null,

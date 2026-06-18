@@ -185,7 +185,12 @@ function App(){
     window.addEventListener("esg:auth:expired", onExpired);
     return () => window.removeEventListener("esg:auth:expired", onExpired);
   }, []);
-  const [section,setSection]       = useState("tasks"); // tasks | notes
+  const [section,setSection_]       = useState("tasks"); // tasks | notes
+  function setSection(s){
+    setSection_(s);
+    window.ESG_CUR_S = s;
+    window.dispatchEvent(new CustomEvent("esg:section",{detail:{s}}));
+  }
   const [tasks, setTasks]          = useState(INIT_TASKS);
   const [notes, setNotes]          = useState(window.ESG_DATA.NOTES);
   const [notifs, setNotifs]        = useState(INIT_NOTIFS);
@@ -471,6 +476,13 @@ function App(){
       Notification.requestPermission().catch(()=>{});
     }
   },[screen]);
+
+  // Bridge für Bottom Nav (separates React-Root)
+  useEffect(()=>{
+    window.ESG_SS = setSection;
+    window.ESG_CUR_S = section;
+    return ()=>{ window.ESG_SS = null; };
+  },[section]);
 
   // Echte Aufgaben + Notizen + Benachrichtigungen vom PHP-Backend laden
   useEffect(()=>{

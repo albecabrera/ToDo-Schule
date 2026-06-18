@@ -192,11 +192,11 @@
 .team-grip{
   display:flex;align-items:center;justify-content:center;
   width:20px;height:36px;flex:none;
-  color:var(--text-3);cursor:grab;opacity:0;
+  color:var(--text-3);cursor:grab;opacity:.35;
   transition:opacity .15s;
 }
 .team-row:hover .team-grip{opacity:1}
-.team-grip:active{cursor:grabbing}
+.team-grip:active{cursor:grabbing;opacity:1}
 
 .team-row-body{
   flex:1;min-width:0;display:flex;align-items:center;gap:8px;

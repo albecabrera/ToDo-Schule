@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Routes;
 
-use App\Controllers\ActivityController;
-use App\Controllers\AdminController;
 use App\Controllers\AttachmentController;
-use App\Controllers\AuditController;
 use App\Controllers\AuthController;
 use App\Controllers\AvatarController;
 use App\Controllers\ChatController;
@@ -16,12 +13,10 @@ use App\Controllers\PushController;
 use App\Controllers\CommentController;
 use App\Controllers\NotificationController;
 use App\Controllers\NoteController;
-use App\Controllers\SearchController;
 use App\Controllers\ShareController;
 use App\Controllers\TaskController;
 use App\Controllers\CalendarController;
 use App\Controllers\ElternkontaktController;
-use App\Controllers\KlassenbuchController;
 use App\Controllers\KlasselisteController;
 use App\Controllers\TeamController;
 use App\Controllers\UserController;
@@ -53,30 +48,10 @@ return (static function (): Router {
     $r->get('/api/users/me/export',      [GdprController::class,  'export'],     ['auth' => true]);
     $r->delete('/api/users/me',          [GdprController::class,  'deleteMe'],   ['auth' => true]);
 
-    // --- Globale Suche --------------------------------------------------------
-    $r->get('/api/search',   [SearchController::class,  'search'], ['auth' => true]);
-
-    // --- Aktivitäts-Feed -----------------------------------------------------
-    $r->get('/api/activity', [ActivityController::class, 'index'],  ['auth' => true]);
-
-    // --- Administration (nur is_admin=1) --------------------------------------
-    $r->get('/api/admin/users',              [AdminController::class, 'index'],         ['auth' => true, 'admin' => true]);
-    $r->post('/api/admin/users',             [AdminController::class, 'store'],         ['auth' => true, 'admin' => true]);
-    $r->patch('/api/admin/users/:id',        [AdminController::class, 'update'],        ['auth' => true, 'admin' => true]);
-    $r->post('/api/admin/users/:id/reset',   [AdminController::class, 'resetPassword'], ['auth' => true, 'admin' => true]);
-    $r->delete('/api/admin/users/:id',       [AdminController::class, 'destroy'],       ['auth' => true, 'admin' => true]);
-
-    // --- Klasselisten ---------------------------------------------------------
     // --- Elternkontakte -----------------------------------------------------
     $r->get('/api/elternkontakte',         [ElternkontaktController::class, 'index'],   ['auth' => true]);
     $r->post('/api/elternkontakte',        [ElternkontaktController::class, 'store'],   ['auth' => true]);
     $r->delete('/api/elternkontakte/:id',  [ElternkontaktController::class, 'destroy'], ['auth' => true]);
-
-    // --- Klassenbuch ---------------------------------------------------------
-    $r->get('/api/klassenbuch',            [KlassenbuchController::class, 'index'],     ['auth' => true]);
-    $r->post('/api/klassenbuch',           [KlassenbuchController::class, 'store'],     ['auth' => true]);
-    $r->patch('/api/klassenbuch/:id',      [KlassenbuchController::class, 'update'],    ['auth' => true]);
-    $r->delete('/api/klassenbuch/:id',     [KlassenbuchController::class, 'destroy'],   ['auth' => true]);
 
     // --- Klasselisten --------------------------------------------------------
     $r->get('/api/klasselisten',            [KlasselisteController::class, 'index'],    ['auth' => true]);
@@ -124,9 +99,6 @@ return (static function (): Router {
     $r->delete('/api/teams/:id',    [TeamController::class, 'destroy'], ['auth' => true]);
     $r->post('/api/teams/:id/invite',[TeamController::class, 'invite'], ['auth' => true]);
 
-    // --- Audit ----------------------------------------------------------------
-    $r->get('/api/tasks/:id/audit', [AuditController::class, 'index'], ['auth' => true]);
-
     // --- Anhänge (Tasks) -----------------------------------------------------
     $r->get('/api/tasks/:id/attachments',                              [AttachmentController::class, 'indexTask'],  ['auth' => true]);
     $r->post('/api/tasks/:id/attachments',                             [AttachmentController::class, 'uploadTask'], ['auth' => true]);
@@ -153,7 +125,6 @@ return (static function (): Router {
     $r->post('/api/chat/read',   [ChatController::class, 'read'],       ['auth' => true]);
     $r->post('/api/chat/:id/react', [ChatController::class, 'react'],   ['auth' => true]);
     $r->post('/api/chat/:id/pin',   [ChatController::class, 'pin'],     ['auth' => true]);
-    $r->post('/api/chat/call/signal',[ChatController::class, 'callSignal'], ['auth' => true]);
 
     // --- Web-Push ------------------------------------------------------------
     $r->get('/api/push/public-key',  [PushController::class, 'publicKey'],   ['auth' => true]);

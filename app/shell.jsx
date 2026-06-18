@@ -135,9 +135,19 @@ function Sidebar({
   const [newIcon, setNewIcon]   = useState("📁");
   const [openMenu, setOpenMenu] = useState(null); // teamId or null
 
-  // Drag & drop
+  // Team DnD (within Bereiche)
   const dragSrc  = useRef(null);
   const [dragOver, setDragOver] = useState(null);
+
+  // Section DnD
+  const DEFAULT_SECTION_ORDER = ["klasse","aufgaben","kollegium","bereiche"];
+  const [sectionOrder, setSectionOrder] = useState(()=>{
+    try{ const s=JSON.parse(localStorage.getItem("sb-section-order")); if(Array.isArray(s)&&s.length===4) return s; }catch{}
+    return DEFAULT_SECTION_ORDER;
+  });
+  const secDragSrc    = useRef(null);
+  const [secDragOver, setSecDragOver] = useState(null);
+  const secGripPressed = useRef(false);
 
   // Open profile modal when topbar avatar is clicked (CustomEvent bridge)
   useEffect(()=>{
@@ -195,6 +205,45 @@ function Sidebar({
     dragSrc.current = null;
     setDragOver(null);
     if(srcId && srcId!==targetId) onReorderTeams(srcId, targetId);
+  }
+
+  // Section DnD handlers
+  function handleSecDragStart(e, secId){
+    secDragSrc.current = secId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", secId);
+    e.stopPropagation();
+  }
+  function handleSecDragEnd(e){
+    secDragSrc.current = null;
+    setSecDragOver(null);
+    secGripPressed.current = false;
+    e.stopPropagation();
+  }
+  function handleSecDragOver(e, secId){
+    if(!secDragSrc.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(secId !== secDragSrc.current) setSecDragOver(secId);
+  }
+  function handleSecDragLeave(e){
+    if(!e.currentTarget.contains(e.relatedTarget)) setSecDragOver(null);
+  }
+  function handleSecDrop(e, secId){
+    e.preventDefault();
+    e.stopPropagation();
+    const srcId = secDragSrc.current;
+    secDragSrc.current = null;
+    setSecDragOver(null);
+    if(!srcId || srcId === secId) return;
+    const next = [...sectionOrder];
+    const fi = next.indexOf(srcId);
+    const ti = next.indexOf(secId);
+    if(fi===-1||ti===-1) return;
+    next.splice(fi,1);
+    next.splice(ti,0,srcId);
+    setSectionOrder(next);
+    localStorage.setItem("sb-section-order", JSON.stringify(next));
   }
 
   // Resize drag logic
@@ -290,140 +339,147 @@ function Sidebar({
     ),
 
     h("div",{className:"sb-scroll"},
-      // Nav
-      navItems.map(it => h("button",{
-        key:it.id, className:`navitem ${section==="tasks"&&activeTeam===it.id?"on":""}`,
-        onClick:()=>{ setActiveTeam(it.id); onClose(); }
-      },
-        h(Icon,{n:it.icon,size:17}),
-        h("span",{className:"grow"},it.label),
-        it.count > 0 && h("span",{className:"ct"},it.count)
-      )),
-
-      h("div",{className:"sb-label"},h("span",null,"Klasse")),
-      h("button",{
-        className:`navitem ${section==="klasseliste"?"on":""}`,
-        onClick:()=>{ setSection("klasseliste"); onClose(); }
-      },
-        h(Icon,{n:"list",size:17}),
-        h("span",{className:"grow"},"Klassenliste 📋")
-      ),
-
-      h("button",{
-        className:`navitem ${section==="kontaktliste"?"on":""}`,
-        onClick:()=>{ setSection("kontaktliste"); onClose(); }
-      },
-        h(Icon,{n:"users",size:17}),
-        h("span",{className:"grow"},"Kontaktliste 📇")
-      ),
-
-      h("div",{className:"sb-label"},h("span",null,"Kollegium")),
-      h("button",{
-        className:`navitem ${section==="notes"?"on":""}`,
-        onClick:()=>{ setSection("notes"); onClose(); }
-      },
-        h(Icon,{n:"book",size:17}),
-        h("span",{className:"grow"},"Notizen & Planungen")
-      ),
-
-      h("button",{
-        className:`navitem ${section==="chat"?"on":""}`,
-        onClick:()=>{ setSection("chat"); onClose(); }
-      },
-        h(Icon,{n:"messageCircle",size:17}),
-        h("span",{className:"grow"},"Chat")
-      ),
-
-      /* Bereiche header */
-      h("div",{className:"sb-label"},
-        h("span",null,"Bereiche"),
-        h("button",{title:"Bereich erstellen",onClick:()=>{ setCreating(true); setTmpName(""); setOpenMenu(null); }},
-          h(Icon,{n:"plus",size:13}))
-      ),
-
-      /* Team rows with DnD + three-dot menu */
-      TEAMS.filter(t=>t.id!==0).map(team => {
-        const cnt = TASKS.filter(t=>t.teamId===team.id&&t.status!=="done").length;
-        const isOver   = dragOver===team.id;
-        const isActive = section==="tasks" && activeTeam===team.id;
-
-        if(renaming===team.id){
-          return h("div",{key:team.id,className:"navitem on",style:{cursor:"default"}},
-            h(TagDot,{color:team.color,size:10}),
-            h("input",{className:"sb-rename",value:tmpName,autoFocus:true,
-              onChange:e=>setTmpName(e.target.value),
-              onBlur:commitRename,
-              onKeyDown:e=>{ if(e.key==="Enter") commitRename(); if(e.key==="Escape") setRenaming(null); }
-            })
-          );
-        }
+      sectionOrder.map(secId=>{
+        const isSecOver = secDragOver===secId;
+        const grip = h("span",{
+          className:"sb-sec-grip",
+          title:"Abschnitt verschieben",
+          onMouseDown:e=>{ secGripPressed.current=true; e.stopPropagation(); },
+          onMouseUp:()=>{ secGripPressed.current=false; },
+        }, h(Icon,{n:"grip",size:11,strokeWidth:2.5}));
 
         return h("div",{
-          key:team.id,
-          className:`team-row ${isActive?"active":""} ${isOver?"drag-over":""}`,
+          key:secId,
+          className:`sb-section${isSecOver?" sb-section-over":""}`,
           draggable:true,
-          onDragStart:e=>handleDragStart(e,team.id),
-          onDragEnd:handleDragEnd,
-          onDragOver:e=>handleDragOver(e,team.id),
-          onDragLeave:handleDragLeave,
-          onDrop:e=>handleDrop(e,team.id),
+          onDragStart:e=>{
+            if(!secGripPressed.current){ e.preventDefault(); return; }
+            secGripPressed.current=false;
+            handleSecDragStart(e,secId);
+          },
+          onDragEnd:handleSecDragEnd,
+          onDragOver:e=>handleSecDragOver(e,secId),
+          onDragLeave:handleSecDragLeave,
+          onDrop:e=>handleSecDrop(e,secId),
         },
-          /* grip handle */
-          h("span",{className:"team-grip","aria-hidden":"true"},
-            h(Icon,{n:"grip",size:13,strokeWidth:2})
-          ),
-          /* main clickable area */
-          h("div",{className:"team-row-body",onClick:()=>{ setActiveTeam(team.id); setOpenMenu(null); onClose(); }},
-            h("span",{className:"team-row-icon"},team.icon),
-            h("span",{className:"team-row-name"},team.name),
-            cnt > 0 && h("span",{className:"ct"},cnt)
-          ),
-          /* three-dot button */
-          h("button",{
-            className:"team-more",
-            title:"Optionen",
-            onClick:e=>{ e.stopPropagation(); setOpenMenu(openMenu===team.id?null:team.id); }
-          }, h(Icon,{n:"moreV",size:14})),
 
-          /* popup menu */
-          openMenu===team.id && h(TeamPopup,{
-            team,
-            onClose:()=>setOpenMenu(null),
-            onRename:startRename,
-            onDelete:onDeleteTeam,
-            onUpdate:onUpdateTeam,
-            onNewTask:onNewTaskInTeam,
-            onInvite:()=>{}
-          })
-        );
-      }),
+        // ── Klasse ──────────────────────────────────────────────────────
+        secId==="klasse" && h(Fragment,null,
+          h("div",{className:"sb-label"},
+            grip,
+            h("span",null,"Klasse")
+          ),
+          h("button",{className:`navitem ${section==="klasseliste"?"on":""}`,onClick:()=>{ setSection("klasseliste"); onClose(); }},
+            h(Icon,{n:"list",size:17}),h("span",{className:"grow"},"Klassenliste 📋")
+          ),
+          h("button",{className:`navitem ${section==="kontaktliste"?"on":""}`,onClick:()=>{ setSection("kontaktliste"); onClose(); }},
+            h(Icon,{n:"users",size:17}),h("span",{className:"grow"},"Kontaktliste 📇")
+          )
+        ),
 
-      /* Create new Bereich */
-      creating && h("div",{className:"team-creator"},
-        h("div",{className:"row gap-8",style:{marginBottom:7}},
-          h("span",{className:"sb-icon-pick"},newIcon),
-          h("input",{className:"sb-rename",value:tmpName,autoFocus:true,placeholder:"Name des Bereichs…",
-            onChange:e=>setTmpName(e.target.value),
-            onKeyDown:e=>{
-              if(e.key==="Enter") commitCreate();
-              if(e.key==="Escape"){ setCreating(false); setTmpName(""); }
-            }})
+        // ── Aufgaben ─────────────────────────────────────────────────────
+        secId==="aufgaben" && h(Fragment,null,
+          h("div",{className:"sb-label"},
+            grip,
+            h("span",null,"Aufgaben")
+          ),
+          navItems.map(it=>h("button",{
+            key:it.id, className:`navitem ${section==="tasks"&&activeTeam===it.id?"on":""}`,
+            onClick:()=>{ setActiveTeam(it.id); onClose(); }
+          },
+            h(Icon,{n:it.icon,size:17}),
+            h("span",{className:"grow"},it.label),
+            it.count > 0 && h("span",{className:"ct"},it.count)
+          ))
         ),
-        h("div",{className:"tp-edit-label"},"Farbe"),
-        h("div",{className:"sb-swatches",style:{flexWrap:"wrap",gap:6}},
-          COLOR_SWATCHES.map(c=>h("button",{key:c,className:`sb-swatch ${newColor===c?"on":""}`,
-            style:{background:c,width:22,height:22},onClick:()=>setNewColor(c)}))
+
+        // ── Kollegium ────────────────────────────────────────────────────
+        secId==="kollegium" && h(Fragment,null,
+          h("div",{className:"sb-label"},
+            grip,
+            h("span",null,"Kollegium")
+          ),
+          h("button",{className:`navitem ${section==="notes"?"on":""}`,onClick:()=>{ setSection("notes"); onClose(); }},
+            h(Icon,{n:"book",size:17}),h("span",{className:"grow"},"Notizen & Planungen")
+          ),
+          h("button",{className:`navitem ${section==="chat"?"on":""}`,onClick:()=>{ setSection("chat"); onClose(); }},
+            h(Icon,{n:"messageCircle",size:17}),h("span",{className:"grow"},"Chat")
+          )
         ),
-        h("div",{className:"tp-edit-label",style:{marginTop:8}},"Icon"),
-        h("div",{className:"sb-icons",style:{flexWrap:"wrap"}},
-          ICON_OPTIONS.map(ic=>h("button",{key:ic,className:`sb-icoopt ${newIcon===ic?"on":""}`,
-            onClick:()=>setNewIcon(ic)},ic))
-        ),
-        h("div",{className:"row gap-8",style:{marginTop:9}},
-          h("button",{className:"btn btn-primary btn-sm",style:{flex:1},onClick:commitCreate},"Erstellen"),
-          h("button",{className:"btn btn-ghost btn-sm",onClick:()=>{ setCreating(false); setTmpName(""); }},"Abbrechen")
+
+        // ── Bereiche ─────────────────────────────────────────────────────
+        secId==="bereiche" && h(Fragment,null,
+          h("div",{className:"sb-label"},
+            grip,
+            h("span",null,"Bereiche"),
+            h("button",{title:"Bereich erstellen",onClick:()=>{ setCreating(true); setTmpName(""); setOpenMenu(null); }},
+              h(Icon,{n:"plus",size:13}))
+          ),
+          TEAMS.filter(t=>t.id!==0).map(team=>{
+            const cnt = TASKS.filter(t=>t.teamId===team.id&&t.status!=="done").length;
+            const isOver   = dragOver===team.id;
+            const isActive = section==="tasks" && activeTeam===team.id;
+
+            if(renaming===team.id){
+              return h("div",{key:team.id,className:"navitem on",style:{cursor:"default"}},
+                h(TagDot,{color:team.color,size:10}),
+                h("input",{className:"sb-rename",value:tmpName,autoFocus:true,
+                  onChange:e=>setTmpName(e.target.value),
+                  onBlur:commitRename,
+                  onKeyDown:e=>{ if(e.key==="Enter") commitRename(); if(e.key==="Escape") setRenaming(null); }
+                })
+              );
+            }
+
+            return h("div",{
+              key:team.id,
+              className:`team-row ${isActive?"active":""} ${isOver?"drag-over":""}`,
+              draggable:true,
+              onDragStart:e=>{ e.stopPropagation(); handleDragStart(e,team.id); },
+              onDragEnd:e=>{ e.stopPropagation(); handleDragEnd(e); },
+              onDragOver:e=>{ e.stopPropagation(); handleDragOver(e,team.id); },
+              onDragLeave:e=>{ e.stopPropagation(); handleDragLeave(); },
+              onDrop:e=>{ e.stopPropagation(); handleDrop(e,team.id); },
+            },
+              h("span",{className:"team-grip","aria-hidden":"true"},h(Icon,{n:"grip",size:13,strokeWidth:2})),
+              h("div",{className:"team-row-body",onClick:()=>{ setActiveTeam(team.id); setOpenMenu(null); onClose(); }},
+                h("span",{className:"team-row-icon"},team.icon),
+                h("span",{className:"team-row-name"},team.name),
+                cnt > 0 && h("span",{className:"ct"},cnt)
+              ),
+              h("button",{className:"team-more",title:"Optionen",
+                onClick:e=>{ e.stopPropagation(); setOpenMenu(openMenu===team.id?null:team.id); }
+              }, h(Icon,{n:"moreV",size:14})),
+              openMenu===team.id && h(TeamPopup,{
+                team,onClose:()=>setOpenMenu(null),onRename:startRename,
+                onDelete:onDeleteTeam,onUpdate:onUpdateTeam,onNewTask:onNewTaskInTeam,onInvite:()=>{}
+              })
+            );
+          }),
+          creating && h("div",{className:"team-creator"},
+            h("div",{className:"row gap-8",style:{marginBottom:7}},
+              h("span",{className:"sb-icon-pick"},newIcon),
+              h("input",{className:"sb-rename",value:tmpName,autoFocus:true,placeholder:"Name des Bereichs…",
+                onChange:e=>setTmpName(e.target.value),
+                onKeyDown:e=>{ if(e.key==="Enter") commitCreate(); if(e.key==="Escape"){ setCreating(false); setTmpName(""); } }})
+            ),
+            h("div",{className:"tp-edit-label"},"Farbe"),
+            h("div",{className:"sb-swatches",style:{flexWrap:"wrap",gap:6}},
+              COLOR_SWATCHES.map(c=>h("button",{key:c,className:`sb-swatch ${newColor===c?"on":""}`,
+                style:{background:c,width:22,height:22},onClick:()=>setNewColor(c)}))
+            ),
+            h("div",{className:"tp-edit-label",style:{marginTop:8}},"Icon"),
+            h("div",{className:"sb-icons",style:{flexWrap:"wrap"}},
+              ICON_OPTIONS.map(ic=>h("button",{key:ic,className:`sb-icoopt ${newIcon===ic?"on":""}`,onClick:()=>setNewIcon(ic)},ic))
+            ),
+            h("div",{className:"row gap-8",style:{marginTop:9}},
+              h("button",{className:"btn btn-primary btn-sm",style:{flex:1},onClick:commitCreate},"Erstellen"),
+              h("button",{className:"btn btn-ghost btn-sm",onClick:()=>{ setCreating(false); setTmpName(""); }},"Abbrechen")
+            )
+          )
         )
-      ),
+        ); // end section div
+      }),
 
       h("div",{className:"sb-label"},"Kollegium"),
       h("div",{style:{padding:"4px 6px",display:"flex",flexDirection:"column",gap:4}},

@@ -313,3 +313,16 @@ CREATE TABLE IF NOT EXISTS klasselisten (
   created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Elternkontakt-Log: Kontaktprotokoll pro Schüler innerhalb einer Klasseliste
+CREATE TABLE IF NOT EXISTS elternkontakte (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_id      INTEGER NOT NULL,
+  student_name TEXT    NOT NULL,
+  contact_date DATE    NOT NULL,
+  contact_type TEXT    NOT NULL DEFAULT 'telefon',
+  note         TEXT    NOT NULL DEFAULT '',
+  user_id      INTEGER NOT NULL,
+  created_at   DATETIME DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_elk_student ON elternkontakte(list_id, student_name);

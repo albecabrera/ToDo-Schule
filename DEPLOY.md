@@ -395,32 +395,6 @@ sqlite3 backend/database.sqlite "PRAGMA wal_checkpoint(TRUNCATE);"
 
 DevTools → Application → Service Workers → **Update** o **Unregister**. El SW se auto-invalida cuando `CACHE` en `sw.js` cambia de versión.
 
-### Videollamadas no conectan (NAT estricto)
-
-STUN funciona para ~90% de redes. Para redes corporativas/VPN con NAT simétrico, configurar un servidor TURN:
-
-```bash
-# Instalar coturn
-sudo apt install coturn
-
-# /etc/turnserver.conf (mínimo viable)
-listening-port=3478
-tls-listening-port=5349
-realm=tu-escuela.de
-server-name=turn.tu-escuela.de
-user=esg:CONTRASEÑA_TURN
-lt-cred-mech
-fingerprint
-```
-
-Luego agregar en `dist/call.js`:
-```js
-const ICE = { iceServers: [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "turn:turn.tu-escuela.de:3478", username: "esg", credential: "CONTRASEÑA_TURN" }
-]};
-```
-
 ---
 
 ## Desarrollo local

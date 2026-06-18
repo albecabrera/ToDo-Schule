@@ -30,10 +30,6 @@
   <link rel="stylesheet" href="app/notes.css">
   <link rel="stylesheet" href="app/chat.css">
   <link rel="stylesheet" href="app/responsive.css">
-  <link rel="stylesheet" href="app/call.css">
-  <link rel="stylesheet" href="app/search.css">
-  <link rel="stylesheet" href="app/activity.css">
-  <link rel="stylesheet" href="app/admin.css">
   <link rel="stylesheet" href="app/klasseliste.css">
   <link rel="stylesheet" href="app/kontaktliste.css">
   <link rel="stylesheet" href="app/bottom-nav.css">
@@ -47,8 +43,7 @@
   <!-- Offline-First: Outbox + Auto-Sync (vor dem Bundle, patcht apiFetch-Verhalten) -->
   <script defer src="dist/offline.js"></script>
 
-  <!-- HEIC → JPEG converter (client-side, Apple format support) -->
-  <script defer src="vendor/heic2any.min.js"></script>
+  <!-- HEIC → JPEG converter: lazy geladen bei Avatar-Upload (1.3 MB nicht im Initial-Load) -->
 
   <!-- React (Production, self-hosted — kein CDN, kein Babel zur Laufzeit) -->
   <script defer src="vendor/react.production.min.js"></script>
@@ -58,16 +53,6 @@
   <script defer src="dist/app.min.js"></script>
   <!-- Kollegiumschat (separates Modul) -->
   <script defer src="dist/chat.js"></script>
-  <!-- WebRTC-Anruf (separates Modul) -->
-  <script defer src="dist/call.js"></script>
-  <!-- Command Palette ⌘K (separates Modul) -->
-  <script defer src="dist/palette.js"></script>
-  <!-- Globale App-Suche (Aufgaben + Notizen + Anhänge) -->
-  <script defer src="dist/search.js"></script>
-  <!-- Aktivitäts-Feed -->
-  <script defer src="dist/activity.js"></script>
-  <!-- Admin-Panel (Benutzerverwaltung) -->
-  <script defer src="dist/admin.js"></script>
   <!-- Klassenliste — Checkliste für Klassen -->
   <script defer src="dist/klasseliste.js"></script>
   <!-- Kontaktliste — Kontaktdaten Klasse 5d -->

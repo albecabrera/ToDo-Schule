@@ -593,6 +593,21 @@ function Topbar({activeTeam, section, view, setView, notifCount, onBell, onMenuO
   );
 }
 
+/* ── heic2any: nur bei Bedarf laden (1.3 MB nicht im Initial-Load) ─────── */
+let _heicLoader = null;
+function loadHeic2any(){
+  if(window.heic2any) return Promise.resolve(window.heic2any);
+  if(_heicLoader) return _heicLoader;
+  _heicLoader = new Promise((resolve, reject)=>{
+    const s = document.createElement("script");
+    s.src = "vendor/heic2any.min.js";
+    s.onload  = ()=>resolve(window.heic2any);
+    s.onerror = ()=>{ _heicLoader = null; reject(new Error("heic2any konnte nicht geladen werden")); };
+    document.head.appendChild(s);
+  });
+  return _heicLoader;
+}
+
 /* ── Profile Modal ───────────────────────────────────────────────────── */
 function ProfileModal({onClose}){
   const [name, setName]     = useState(ME.name);
@@ -610,10 +625,13 @@ function ProfileModal({onClose}){
     setAvatarFile(file);
     if(!file){ setPreviewUrl(ME.avatarUrl||null); return; }
     const lname = file.name.toLowerCase();
-    if((lname.endsWith(".heic")||lname.endsWith(".heif")) && window.heic2any){
-      const blob = await window.heic2any({blob:file,toType:"image/jpeg",quality:0.8});
-      setPreviewUrl(URL.createObjectURL(blob));
-    } else if(!lname.endsWith(".heic") && !lname.endsWith(".heif")){
+    if(lname.endsWith(".heic")||lname.endsWith(".heif")){
+      try{
+        const heic2any = await loadHeic2any();
+        const blob = await heic2any({blob:file,toType:"image/jpeg",quality:0.8});
+        setPreviewUrl(URL.createObjectURL(blob));
+      }catch(_){ /* Konverter nicht verfügbar — Vorschau überspringen */ }
+    } else {
       setPreviewUrl(URL.createObjectURL(file));
     }
   }
@@ -637,9 +655,10 @@ function ProfileModal({onClose}){
       if(avatarFile){
         const lname = avatarFile.name.toLowerCase();
         let fileToSend = avatarFile;
-        if((lname.endsWith(".heic")||lname.endsWith(".heif")) && window.heic2any){
-          const blob = await window.heic2any({blob:avatarFile,toType:"image/jpeg",quality:0.9});
-          fileToSend = new File([blob], avatarFile.name.replace(/\.heic$/i,".jpg"), {type:"image/jpeg"});
+        if(lname.endsWith(".heic")||lname.endsWith(".heif")){
+          const heic2any = await loadHeic2any();
+          const blob = await heic2any({blob:avatarFile,toType:"image/jpeg",quality:0.9});
+          fileToSend = new File([blob], avatarFile.name.replace(/\.hei[cf]$/i,".jpg"), {type:"image/jpeg"});
         }
         const result = await window.ESG_API.uploadAvatar(fileToSend);
         ME.avatarUrl = result.avatarUrl;
